@@ -11,39 +11,59 @@ use Illuminate\Console\Command;
 
 class CalculateScoresCommand extends Command
 {
-    protected $signature = 'supplements:calculate-scores {--mappings : Also create condition mappings}';
+    protected $signature = 'supplements:calculate-scores {--mappings : Also create condition mappings} {--scores-only : Only calculate scores, skip rankings and brand trust}';
 
-    protected $description = 'Calculate clinical scores (efficacy, quality, bioavailability, formulation) for all supplements';
+    protected $description = 'Calculate clinical scores, category rankings, and brand trust for all supplements';
 
     public function handle(SupplementScoringService $scoringService)
     {
-        $this->info('Calculating supplement scores...');
-
         $total = Supplement::count();
-        $this->info("Processing $total supplements...");
 
-        $bar = $this->output->createProgressBar($total);
-        $bar->start();
+        if ($this->option('scores-only')) {
+            $this->info("Phase 1: Calculating clinical scores for {$total} supplements...");
+            $bar = $this->output->createProgressBar($total);
+            $bar->start();
 
-        $processed = 0;
-        $batchSize = 200;
+            $processed = $scoringService->calculateAllScores(function ($count) use ($bar) {
+                $bar->setProgress($count);
+            });
 
-        Supplement::chunkById($batchSize, function ($supplements) use ($scoringService, &$processed, $bar) {
-            foreach ($supplements as $supplement) {
-                $scores = $scoringService->calculateScores($supplement);
-                $supplement->update($scores);
-                $processed++;
-            }
-            $bar->advance(count($supplements));
-        });
+            $bar->finish();
+            $this->newLine();
+            $this->info("Scored {$processed} supplements.");
 
-        $bar->finish();
-        $this->newLine();
-        $this->info("Calculated scores for $processed supplements.");
+            $scoringService->updateCategoryCounts();
+        } else {
+            // Full pipeline: scores → rankings → brand trust → counts
+            $this->info("Running full scoring pipeline on {$total} supplements...");
+            $this->newLine();
 
-        // Update category counts
-        $this->info('Updating category counts...');
-        $scoringService->updateCategoryCounts();
+            // Phase 1: Clinical scores
+            $this->info('Phase 1/4: Calculating clinical scores...');
+            $bar = $this->output->createProgressBar($total);
+            $bar->start();
+
+            $scoringService->calculateAllScores(function ($count) use ($bar) {
+                $bar->setProgress($count);
+            });
+
+            $bar->finish();
+            $this->newLine();
+
+            // Phase 2: Category rankings
+            $this->info('Phase 2/4: Calculating category rankings...');
+            $ranked = $scoringService->calculateCategoryRankings();
+            $this->info("  Ranked {$ranked} supplements across categories.");
+
+            // Phase 3: Brand trust scores
+            $this->info('Phase 3/4: Calculating brand trust scores...');
+            $brands = $scoringService->calculateBrandTrustScores();
+            $this->info("  Updated {$brands} supplements with brand trust scores.");
+
+            // Phase 4: Category counts
+            $this->info('Phase 4/4: Updating category counts...');
+            $scoringService->updateCategoryCounts();
+        }
 
         // Show category distribution
         $this->newLine();
@@ -51,6 +71,20 @@ class CalculateScoresCommand extends Command
         $categories = SupplementCategory::orderBy('product_count', 'desc')->get();
         foreach ($categories as $cat) {
             $this->line("  {$cat->icon} {$cat->name}: {$cat->product_count} products");
+        }
+
+        // Show top 5 per category sample
+        $this->newLine();
+        $this->info('Top supplement per category:');
+        foreach ($categories->take(10) as $cat) {
+            $top = Supplement::where('category_id', $cat->id)
+                ->where('category_rank', 1)
+                ->first();
+            if ($top) {
+                $flags = !empty($top->red_flags_detected) ? ' [' . count($top->red_flags_detected) . ' flags]' : '';
+                $this->line("  {$cat->icon} {$cat->name}: [{$top->overall_recommendation_score}] {$top->brand} - {$top->title}{$flags}");
+                $this->line("    Dose: {$top->clinical_dose_score} | Efficacy: {$top->efficacy_score} | Quality: {$top->quality_score} | Bio: {$top->bioavailability_score} | Brand Trust: {$top->brand_trust_score}");
+            }
         }
 
         // Create condition mappings if requested
@@ -63,24 +97,11 @@ class CalculateScoresCommand extends Command
         $this->newLine();
         $this->info('Score calculation complete!');
 
-        // Show sample scores
-        $this->info('Sample scores (top 5 by overall score):');
-        $topSupplements = Supplement::whereNotNull('overall_recommendation_score')
-            ->orderBy('overall_recommendation_score', 'desc')
-            ->limit(5)
-            ->get();
-
-        foreach ($topSupplements as $s) {
-            $this->line("  [{$s->overall_recommendation_score}] {$s->brand} - {$s->title}");
-            $this->line("    Efficacy: {$s->efficacy_score} | Quality: {$s->quality_score} | Formula: {$s->formulation_score} | Bio: {$s->bioavailability_score}");
-        }
-
         return Command::SUCCESS;
     }
 
     private function createConditionMappings()
     {
-        // Condition-Category efficacy mappings based on scientific evidence
         $mappings = [
             'Diabetes' => [
                 'Magnesium' => ['efficacy' => 8.5, 'evidence' => 'strong'],
@@ -180,7 +201,6 @@ class CalculateScoresCommand extends Command
                 $categoryId = $categories[$categoryName] ?? null;
                 if (!$categoryId) continue;
 
-                // Get all supplements in this category
                 $supplementIds = Supplement::where('category_id', $categoryId)
                     ->whereNotNull('overall_recommendation_score')
                     ->orderBy('overall_recommendation_score', 'desc')

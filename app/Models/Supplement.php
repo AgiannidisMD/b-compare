@@ -18,7 +18,9 @@ class Supplement extends Model
         'daily_dose_recommended', 'daily_servings_estimate',
         'days_of_supply', 'warning_flags', 'extraction_confidence',
         'efficacy_score', 'bioavailability_score', 'quality_score',
-        'value_score', 'formulation_score', 'overall_recommendation_score'
+        'value_score', 'formulation_score', 'overall_recommendation_score',
+        'clinical_dose_score', 'category_rank', 'category_percentile',
+        'red_flags_detected', 'brand_trust_score',
     ];
 
     protected $casts = [
@@ -27,6 +29,7 @@ class Supplement extends Model
         'allergen_free_from_flags' => 'array',
         'active_ingredients' => 'array',
         'warning_flags' => 'array',
+        'red_flags_detected' => 'array',
     ];
 
     public function category()
