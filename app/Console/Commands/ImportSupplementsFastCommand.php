@@ -93,8 +93,8 @@ class ImportSupplementsFastCommand extends Command
             return $item;
         }, $items);
 
-        // Insert in batches of 100
-        foreach (array_chunk($clean, 100) as $batch) {
+        // Insert in very small batches to avoid timeout
+        foreach (array_chunk($clean, 25) as $batch) {
             Supplement::insert($batch);
         }
 
