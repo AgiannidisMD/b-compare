@@ -11,6 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('supplements')) return;
+
         Schema::create('supplements', function (Blueprint $table) {
             $table->id();
             $table->string('pid')->unique()->nullable();

@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('supplement_condition_mappings')) {
+            return; // Table already exists, skip
+        }
+
         Schema::create('supplement_condition_mappings', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('supplement_id');

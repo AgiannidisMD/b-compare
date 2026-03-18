@@ -11,6 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('chat_conversations')) return;
+
         Schema::create('chat_conversations', function (Blueprint $table) {
             $table->id();
             $table->string('session_id')->unique();

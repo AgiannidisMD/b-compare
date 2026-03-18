@@ -11,6 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('supplement_recommendations')) return;
+
         Schema::create('supplement_recommendations', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('conversation_id');
