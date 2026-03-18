@@ -1,0 +1,46 @@
+*.log
+.DS_Store
+.env
+.env.backup
+.env.production
+.env.local
+.phpactor.json
+.phpunit.result.cache
+/.fleet
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/vendor
+Homestead.json
+Homestead.yaml
+Thumbs.db
+
+# Database files (DO NOT COMMIT)
+/database/*.sqlite
+/database/*.sqlite-journal
+*.sql.gz
+
+# Laravel Cloud
+.laravel-cloud
+
+# Compiled assets (will be built on deploy)
+/public/build/
+
+# IDE specific
+*.swp
+*.swo
+*~
+
+# OS generated
+.Spotlight-V100
+.Trashes
+ehthumbs.db
