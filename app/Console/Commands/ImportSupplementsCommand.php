@@ -135,7 +135,7 @@ class ImportSupplementsCommand extends Command
                     'product_description' => $data['product_description'] ?? null,
                     'dosage_form' => $data['dosage_form'] ?? 'unknown',
                     'serving_size_value' => is_numeric($data['serving_size_value'] ?? null) ? (float)$data['serving_size_value'] : null,
-                    'serving_size_unit' => $data['serving_size_unit'] ?? null,
+                    'serving_size_unit' => isset($data['serving_size_unit']) ? mb_substr(trim($data['serving_size_unit']), 0, 50) : null,
                     'servings_per_container' => is_numeric($data['servings_per_container'] ?? null) ? (float)$data['servings_per_container'] : null,
                     'cost_per_serving' => is_numeric($data['cost_per_serving'] ?? null) ? (float)$data['cost_per_serving'] : null,
                     'cost_per_day' => is_numeric($data['cost_per_day'] ?? null) ? (float)$data['cost_per_day'] : null,

@@ -64,6 +64,21 @@ class ImportSupplementsLoopCommand extends Command
                         $item[$f] = json_encode($item[$f]);
                     }
                 }
+                // Truncate fields that may contain dirty data exceeding column limits
+                $stringLimits = [
+                    'serving_size_unit' => 255,
+                    'dosage_form' => 255,
+                    'currency' => 10,
+                    'comparison_group' => 255,
+                    'sku' => 255,
+                    'brand' => 255,
+                ];
+                foreach ($stringLimits as $field => $max) {
+                    if (isset($item[$field]) && is_string($item[$field]) && mb_strlen($item[$field]) > $max) {
+                        $item[$field] = mb_substr($item[$field], 0, $max);
+                    }
+                }
+
                 $clean[] = $item;
             }
 
