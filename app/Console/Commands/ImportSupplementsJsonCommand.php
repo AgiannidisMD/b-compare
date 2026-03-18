@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\File;
 
 class ImportSupplementsJsonCommand extends Command
 {
-    protected $signature = 'supplements:import-json {--path=}';
+    protected $signature = 'supplements:import-json {--path=} {--force : Skip confirmation} {--chunk=1000 : Chunk size}';
     protected $description = 'Import supplements from JSON export (for production)';
 
     public function handle()
@@ -56,7 +56,7 @@ class ImportSupplementsJsonCommand extends Command
         $total = count($supplements);
         $this->info("Found {$total} supplements to import");
 
-        if ($this->confirm('This will replace all existing supplements. Continue?', true)) {
+        if ($this->option('force') || $this->confirm('This will replace all existing supplements. Continue?', true)) {
 
             // Check database driver for syntax differences
             $driver = DB::getDriverName();
@@ -67,14 +67,15 @@ class ImportSupplementsJsonCommand extends Command
 
             // Truncate existing data
             Supplement::truncate();
+            $this->info('Truncated existing supplements.');
 
-            $bar = $this->output->createProgressBar($total);
-            $bar->start();
+            // Import in larger chunks for speed
+            $chunkSize = (int) $this->option('chunk');
+            $chunks = array_chunk($supplements, $chunkSize);
+            $this->info("Importing in chunks of {$chunkSize}...");
 
-            // Import in chunks of 500
-            $chunks = array_chunk($supplements, 500);
-
-            foreach ($chunks as $chunk) {
+            $imported = 0;
+            foreach ($chunks as $index => $chunk) {
                 // Clean data for import
                 $cleanChunk = array_map(function($item) {
                     // Remove auto-managed fields
@@ -83,7 +84,6 @@ class ImportSupplementsJsonCommand extends Command
                     // Convert JSON arrays stored as strings
                     foreach (['certification_flags', 'allergen_contains_flags', 'allergen_free_from_flags', 'active_ingredients', 'warning_flags'] as $jsonField) {
                         if (isset($item[$jsonField]) && is_string($item[$jsonField])) {
-                            // Keep as string for MySQL JSON column
                             continue;
                         }
                         if (isset($item[$jsonField]) && is_array($item[$jsonField])) {
@@ -95,11 +95,13 @@ class ImportSupplementsJsonCommand extends Command
                 }, $chunk);
 
                 Supplement::insert($cleanChunk);
-                $bar->advance(count($chunk));
-            }
+                $imported += count($chunk);
 
-            $bar->finish();
-            $this->newLine();
+                // Simple progress output (no progress bar to avoid socket issues)
+                if (($index + 1) % 5 === 0 || $imported === $total) {
+                    $this->info("Imported {$imported}/{$total} supplements...");
+                }
+            }
 
             if ($driver === 'mysql') {
                 DB::statement('SET FOREIGN_KEY_CHECKS=1');
