@@ -1,8 +1,8 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "stolos/b-compare",
+    "name": "stolos/vita-compare",
     "type": "project",
-    "description": "B-COMPARE: AI-Powered Supplement Comparison Chatbot - Find the best supplements for your health conditions",
+    "description": "VITA-COMPARE: AI-Powered Supplement Comparison Chatbot - Find the best supplements for your health conditions",
     "keywords": ["supplements", "chatbot", "ai", "health", "comparison", "laravel"],
     "license": "MIT",
     "require": {

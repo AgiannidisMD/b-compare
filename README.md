@@ -1,4 +1,4 @@
-# B-COMPARE - AI-Powered Supplement Comparison Chatbot
+# VITA-COMPARE - AI-Powered Supplement Comparison Chatbot
 
 An intelligent AI chatbot system that helps users find the best supplements for their specific health conditions. Built with Laravel 13 and powered by Claude/GPT-4 via OpenRouter.
 
@@ -26,8 +26,8 @@ An intelligent AI chatbot system that helps users find the best supplements for 
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/your-repo/b-compare.git
-cd b-compare
+git clone https://github.com/your-repo/vita-compare.git
+cd vita-compare
 composer install
 npm install
 ```
@@ -174,7 +174,7 @@ Supported via OpenRouter:
 ## Project Structure
 
 ```
-b-compare/
+vita-compare/
 ├── app/
 │   ├── Http/Controllers/
 │   │   ├── ChatController.php
