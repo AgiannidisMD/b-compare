@@ -17,8 +17,11 @@ class ImportSupplementsFullCommand extends Command
         $totalTarget = 23853;
 
         if ($this->option('fresh')) {
-            $this->warn('Truncating supplements table...');
+            $this->warn('Clearing supplements table...');
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
             DB::table('supplements')->truncate();
+            DB::table('analytics_events')->truncate();
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         }
 
         $existing = Supplement::count();
