@@ -163,7 +163,45 @@ class AutoCategorizeCommand extends Command
 
         $this->info("  Categorized {$scanned} by title/ingredient scan.");
 
-        // Step 4: Summary
+        // Step 4: Fix miscategorized products — override wrong comparison_group
+        // These are products whose TITLE clearly says the primary ingredient
+        // but comparison_group put them in the wrong category
+        $this->info('Step 4: Fixing miscategorized products by title...');
+
+        $overrideMap = [
+            'inositol' => ['inositol', 'ινοσιτόλη', 'myo-inositol', 'd-chiro-inositol', 'myo inositol'],
+            'mushroom-complex' => ['lion\'s mane', 'lions mane', 'reishi extract', 'cordyceps extract', 'mushroom complex', 'mushroom blend'],
+            'berberine' => ['berberine', 'βερβερίνη'],
+            'biotin' => ['biotin', 'βιοτίνη'],
+            'mens-health-prostate' => ['saw palmetto', 'prostate support', 'prostate health', 'προστάτη'],
+            'vitamin-k' => ['vitamin k2', 'βιταμίνη k2', 'mk-7'],
+            'prenatal-fertility' => ['prenatal', 'εγκυμοσύνη'],
+            'selenium' => ['selenium', 'σελήνιο', 'selenomethionine'],
+        ];
+
+        $overridden = 0;
+        foreach ($overrideMap as $slug => $titleKeywords) {
+            $cat = $categories[$slug] ?? null;
+            if (!$cat) continue;
+
+            Supplement::where('category_id', '!=', $cat->id)
+                ->chunkById(500, function ($supplements) use ($titleKeywords, $cat, &$overridden) {
+                    foreach ($supplements as $supplement) {
+                        $title = strtolower($supplement->title ?? '');
+                        foreach ($titleKeywords as $keyword) {
+                            if (str_contains($title, strtolower($keyword))) {
+                                $supplement->update(['category_id' => $cat->id]);
+                                $overridden++;
+                                break;
+                            }
+                        }
+                    }
+                });
+        }
+
+        $this->info("  Fixed {$overridden} miscategorized products.");
+
+        // Step 5: Summary
         $this->newLine();
         $nullCount = Supplement::whereNull('category_id')->count();
         $this->info("DONE! Uncategorized remaining: {$nullCount}");
