@@ -20,8 +20,7 @@ class BrowseController extends Controller
             ];
         });
 
-        $categories = SupplementCategory::where('product_count', '>', 0)
-            ->orderByDesc('product_count')
+        $categories = SupplementCategory::orderByDesc('product_count')
             ->get()
             ->map(function ($c) {
                 return [
