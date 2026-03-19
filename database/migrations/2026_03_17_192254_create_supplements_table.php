@@ -48,7 +48,7 @@ return new class extends Migration
             $table->json('warning_flags')->nullable();
             $table->decimal('extraction_confidence', 3, 2)->nullable();
 
-            // B-COMPARE specific fields
+            // VITA-COMPARE specific fields
             $table->decimal('efficacy_score', 4, 2)->nullable();
             $table->decimal('bioavailability_score', 4, 2)->nullable();
             $table->decimal('quality_score', 4, 2)->nullable();

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scraper Test | B-COMPARE Admin</title>
+    <title>Scraper Test | VITA-COMPARE Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -152,7 +152,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
                         </svg>
                         <div>
-                            <p class="font-medium text-green-800">Import these products to B-COMPARE?</p>
+                            <p class="font-medium text-green-800">Import these products to VITA-COMPARE?</p>
                             <p class="text-sm text-green-600">Select a category and import all {{ $resultCount }} products</p>
                         </div>
                     </div>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>B-COMPARE | Ανάλυση Συμπληρωμάτων Διατροφής</title>
+    <title>VITA-COMPARE | Ανάλυση Συμπληρωμάτων Διατροφής</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -296,7 +296,7 @@
                                 </svg>
                             </div>
                             <div>
-                                <h1 class="text-lg font-semibold tracking-tight" style="color: var(--charcoal);">B-COMPARE</h1>
+                                <h1 class="text-lg font-semibold tracking-tight" style="color: var(--charcoal);">VITA-COMPARE</h1>
                                 <p class="text-xs" style="color: var(--warm-gray);">Ανάλυση Συμπληρωμάτων</p>
                             </div>
                         </div>
@@ -641,7 +641,7 @@
         <!-- Footer (category view only) -->
         <template x-if="!selectedCategory">
             <footer class="py-8 text-center" style="background: var(--charcoal);">
-                <p class="text-sm" style="color: #86868b;">B-COMPARE Ανάλυση Συμπληρωμάτων</p>
+                <p class="text-sm" style="color: #86868b;">VITA-COMPARE Ανάλυση Συμπληρωμάτων</p>
                 <p class="text-xs mt-2" style="color: #6e6e73;">
                     Από την <a href="https://www.stolosofficial.gr" target="_blank" class="hover:underline" style="color: var(--gold);">stolosofficial</a>
                 </p>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>B-COMPARE | Admin Dashboard</title>
+    <title>VITA-COMPARE | Admin Dashboard</title>
     <script defer src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
@@ -133,7 +133,7 @@
                             </svg>
                         </div>
                         <div>
-                            <h1 class="text-xl font-semibold text-charcoal tracking-tight">B-COMPARE</h1>
+                            <h1 class="text-xl font-semibold text-charcoal tracking-tight">VITA-COMPARE</h1>
                             <p class="text-xs text-warm-gray font-light">Admin Dashboard</p>
                         </div>
                     </div>
@@ -404,7 +404,7 @@
         <!-- Footer -->
         <footer class="bg-charcoal text-white py-6 mt-12">
             <div class="max-w-7xl mx-auto px-6 text-center">
-                <p class="text-sm text-gray-400">B-COMPARE Professional Supplement Analysis Platform</p>
+                <p class="text-sm text-gray-400">VITA-COMPARE Professional Supplement Analysis Platform</p>
                 <p class="text-xs text-gray-500 mt-2">Powered by <a href="https://www.stolosofficial.gr" target="_blank" rel="noopener" class="text-gold hover:text-gold-light transition-colors">stolosofficial</a></p>
             </div>
         </footer>

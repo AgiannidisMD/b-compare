@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin | B-COMPARE</title>
+    <title>Admin | VITA-COMPARE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -27,7 +27,7 @@
                         </svg>
                     </div>
                     <div>
-                        <h1 class="text-xl font-semibold" style="color: var(--charcoal);">B-COMPARE Admin</h1>
+                        <h1 class="text-xl font-semibold" style="color: var(--charcoal);">VITA-COMPARE Admin</h1>
                         <p class="text-xs text-gray-500">Supplement Management</p>
                     </div>
                 </div>

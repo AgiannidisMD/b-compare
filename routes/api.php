@@ -12,7 +12,7 @@ use App\Http\Controllers\Api\BrowseApiController;
 
 /*
 |--------------------------------------------------------------------------
-| B-COMPARE API Routes
+| VITA-COMPARE API Routes
 |--------------------------------------------------------------------------
 |
 | Comprehensive API for NutriCRM integration
