@@ -168,7 +168,7 @@ class ChatbotService
     /**
      * Build the system prompt for parameter extraction
      */
-    private function buildExtractionSystemPrompt($conversation, ?UserProfile $userProfile = null): string
+    private function buildExtractionSystemPrompt($conversation, ?UserProfile $userProfile = null, string $userMessage = ''): string
     {
         $categories = SupplementCategory::pluck('name')->implode(', ');
         $conditions = MedicalCondition::pluck('name')->implode(', ');
@@ -188,6 +188,7 @@ class ChatbotService
             : null;
         $clinicalKnowledge = $this->buildClinicalKnowledge($categorySlug);
         $interactionWarnings = $this->buildInteractionWarnings($categorySlug);
+        $liveProducts = $this->buildLiveProductContext($conversation->selected_category_id, $userMessage);
 
         // Get user memory context
         $memoryContext = $userProfile ? $userProfile->getMemoryContext() : '';
@@ -211,9 +212,18 @@ class ChatbotService
 {$memoryContext}
 {$clinicalKnowledge}
 {$interactionWarnings}
+{$liveProducts}
 {$contextualKnowledge}
 
 # ΠΩΣ ΝΑ ΑΠΑΝΤΑΣ
+
+## ΣΗΜΑΝΤΙΚΟ: Χρησιμοποίησε τα ΠΡΑΓΜΑΤΙΚΑ ΔΕΔΟΜΕΝΑ
+Αν υπάρχουν δεδομένα από τη βάση παραπάνω, ΧΡΗΣΙΜΟΠΟΙΗΣΕ ΤΑ στην απάντησή σου.
+- Αναφέρου σε συγκεκριμένα προϊόντα με brand + title
+- Αναφέρου σε πραγματικά scores
+- Αν ο χρήστης ρωτήσει "τι έχετε σε X" → απάντησε με πραγματικά προϊόντα
+- Αν ρωτήσει για μάρκα → δώσε πραγματικά στοιχεία (trust score, products)
+- ΜΗΝ λες "έχουμε πολλές επιλογές" — πες "έχουμε 47 glycinate, τα top 3 είναι..."
 
 ## Αν ο χρήστης ρωτήσει για συγκεκριμένο συστατικό (π.χ. "τι μαγνήσιο να πάρω"):
 - ΕΞΗΓΗΣΕ τη διαφορά μεταξύ μορφών (glycinate vs oxide vs citrate) χρησιμοποιώντας τα clinical data παραπάνω
@@ -277,7 +287,16 @@ PROMPT;
 
     private function extractParameters($history, $conversation, ?UserProfile $userProfile = null): array
     {
-        $systemPrompt = $this->buildExtractionSystemPrompt($conversation, $userProfile);
+        // Get the latest user message for live product context
+        $lastUserMessage = '';
+        for ($i = count($history) - 1; $i >= 0; $i--) {
+            if (($history[$i]['role'] ?? '') === 'user') {
+                $lastUserMessage = $history[$i]['content'] ?? '';
+                break;
+            }
+        }
+
+        $systemPrompt = $this->buildExtractionSystemPrompt($conversation, $userProfile, $lastUserMessage);
 
         // Call AI service
         $result = $this->ai->chat($systemPrompt, $history, 'chat');
@@ -418,6 +437,145 @@ PROMPT;
         }
 
         return "\n# ΚΛΙΝΙΚΗ ΤΕΚΜΗΡΙΩΣΗ\n" . implode("\n", $sections) . "\n";
+    }
+
+    /**
+     * Query database for real product data relevant to current conversation.
+     * Gives the AI actual product info to reference during chat (not just at recommendation time).
+     */
+    private function buildLiveProductContext(?int $categoryId, string $userMessage): string
+    {
+        if (!$categoryId) return '';
+
+        $category = SupplementCategory::find($categoryId);
+        if (!$category) return '';
+
+        $sections = ["\n# ΠΡΑΓΜΑΤΙΚΑ ΔΕΔΟΜΕΝΑ ΑΠΟ ΤΗ ΒΑΣΗ\n"];
+        $sections[] = "Κατηγορία: {$category->name} ({$category->product_count} προϊόντα)\n";
+
+        // Top 5 in category by overall score
+        $top5 = Supplement::where('category_id', $categoryId)
+            ->whereNotNull('overall_recommendation_score')
+            ->orderByDesc('overall_recommendation_score')
+            ->limit(5)
+            ->get();
+
+        if ($top5->isNotEmpty()) {
+            $sections[] = "## Top 5 στην κατηγορία:";
+            foreach ($top5 as $i => $s) {
+                $rank = $s->category_rank ?? ($i + 1);
+                $flags = !empty($s->red_flags_detected) ? ' [' . count($s->red_flags_detected) . ' flags]' : '';
+                $sections[] = "#{$rank} {$s->brand} - {$s->title} | Score: {$s->overall_recommendation_score} | Dose: {$s->clinical_dose_score} | Bio: {$s->bioavailability_score}{$flags}";
+            }
+        }
+
+        // Search for products matching user's message keywords
+        $searchTerms = $this->extractSearchTerms($userMessage);
+        if (!empty($searchTerms)) {
+            $query = Supplement::where('category_id', $categoryId);
+            foreach ($searchTerms as $term) {
+                $query->where(function ($q) use ($term) {
+                    $q->where('title', 'LIKE', "%{$term}%")
+                      ->orWhere('brand', 'LIKE', "%{$term}%");
+                });
+            }
+            $matched = $query->orderByDesc('overall_recommendation_score')->limit(5)->get();
+
+            if ($matched->isNotEmpty()) {
+                $sections[] = "\n## Προϊόντα που ταιριάζουν στην ερώτηση:";
+                foreach ($matched as $s) {
+                    $ingredients = '';
+                    if (!empty($s->active_ingredients) && is_array($s->active_ingredients)) {
+                        $ingList = array_map(fn($ing) => ($ing['name'] ?? '') . ' ' . ($ing['amount'] ?? '') . ($ing['unit'] ?? ''), array_slice($s->active_ingredients, 0, 3));
+                        $ingredients = ' | Συστατικά: ' . implode(', ', $ingList);
+                    }
+                    $flags = !empty($s->red_flags_detected) ? ' | RED FLAGS: ' . implode(', ', $s->red_flags_detected) : '';
+                    $sections[] = "- {$s->brand} - {$s->title} | Score: {$s->overall_recommendation_score} | Dose: {$s->clinical_dose_score} | Bio: {$s->bioavailability_score} | Form: {$s->dosage_form}{$ingredients}{$flags}";
+                }
+            }
+        }
+
+        // Brand stats if user mentions a brand
+        $brandMatch = $this->detectBrandInMessage($userMessage, $categoryId);
+        if ($brandMatch) {
+            $brandProducts = Supplement::where('category_id', $categoryId)
+                ->where('brand', $brandMatch)
+                ->orderByDesc('overall_recommendation_score')
+                ->limit(5)
+                ->get();
+
+            if ($brandProducts->isNotEmpty()) {
+                $avgScore = round($brandProducts->avg('overall_recommendation_score'), 1);
+                $trustScore = $brandProducts->first()->brand_trust_score;
+                $sections[] = "\n## Μάρκα: {$brandMatch} (Trust: {$trustScore}/10, Avg: {$avgScore}/10)";
+                foreach ($brandProducts as $s) {
+                    $sections[] = "- {$s->title} | Score: {$s->overall_recommendation_score} | Dose: {$s->clinical_dose_score}";
+                }
+            }
+        }
+
+        // Category stats
+        $formStats = Supplement::where('category_id', $categoryId)
+            ->whereNotNull('dosage_form')
+            ->selectRaw('dosage_form, COUNT(*) as count, ROUND(AVG(overall_recommendation_score), 1) as avg_score')
+            ->groupBy('dosage_form')
+            ->orderByDesc('avg_score')
+            ->get();
+
+        if ($formStats->isNotEmpty()) {
+            $sections[] = "\n## Μορφές δόσης στην κατηγορία:";
+            foreach ($formStats as $f) {
+                $sections[] = "- {$f->dosage_form}: {$f->count} προϊόντα (avg score: {$f->avg_score})";
+            }
+        }
+
+        return implode("\n", $sections) . "\n";
+    }
+
+    /**
+     * Extract search-worthy terms from user message.
+     */
+    private function extractSearchTerms(string $message): array
+    {
+        $message = strtolower($message);
+
+        // Remove common Greek/English stop words
+        $stopWords = ['θέλω', 'για', 'ένα', 'μου', 'τι', 'ποιο', 'είναι', 'πιο', 'να', 'πάρω', 'the', 'best', 'what', 'which', 'good', 'want', 'need', 'have', 'can', 'you', 'me', 'my', 'is', 'are', 'do', 'a', 'an', 'to', 'for', 'of', 'and', 'in', 'with'];
+
+        $words = preg_split('/[\s,;]+/', $message);
+        $terms = [];
+
+        foreach ($words as $word) {
+            $word = trim($word, '?!.');
+            if (mb_strlen($word) >= 3 && !in_array($word, $stopWords)) {
+                $terms[] = $word;
+            }
+        }
+
+        // Keep max 3 most relevant terms
+        return array_slice($terms, 0, 3);
+    }
+
+    /**
+     * Detect if user mentions a specific brand in their message.
+     */
+    private function detectBrandInMessage(string $message, int $categoryId): ?string
+    {
+        $message = strtolower($message);
+
+        // Get top brands in this category
+        $brands = Supplement::where('category_id', $categoryId)
+            ->select('brand')
+            ->distinct()
+            ->pluck('brand');
+
+        foreach ($brands as $brand) {
+            if (str_contains($message, strtolower($brand))) {
+                return $brand;
+            }
+        }
+
+        return null;
     }
 
     /**
