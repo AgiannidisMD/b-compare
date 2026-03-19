@@ -35,14 +35,22 @@ class SupplementCategorySeeder extends Seeder
             ['name' => 'Sleep Support', 'icon' => '😴'],
             ['name' => 'Herbal/Adaptogens', 'icon' => '🌿'],
             ['name' => 'Fiber Supplements', 'icon' => '🥬'],
+            ['name' => 'Multivitamins', 'icon' => '💊'],
+            ['name' => 'Creatine', 'icon' => '🏋️'],
+            ['name' => 'Greens & Superfoods', 'icon' => '🥦'],
+            ['name' => 'NMN / NAD+', 'icon' => '🧪'],
+            ['name' => 'Vitamins (Other)', 'icon' => '💎'],
+            ['name' => 'Other Supplements', 'icon' => '📦'],
         ];
 
         foreach ($categories as $category) {
-            SupplementCategory::create([
-                'name' => $category['name'],
-                'slug' => Str::slug($category['name']),
-                'icon' => $category['icon'],
-            ]);
+            SupplementCategory::updateOrCreate(
+                ['name' => $category['name']],
+                [
+                    'slug' => Str::slug($category['name']),
+                    'icon' => $category['icon'],
+                ]
+            );
         }
     }
 }

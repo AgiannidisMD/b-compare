@@ -676,6 +676,34 @@
                 loading: false,
                 recommendations: null,
                 showQuickReplies: true,
+                preselectedCategory: @json($preselectedCategory ?? null),
+                preselectedSupplement: @json($preselectedSupplement ?? null),
+                preselectedGoal: @json($preselectedGoal ?? null),
+                preselectedBrand: @json($preselectedBrand ?? null),
+
+                init() {
+                    if (this.preselectedCategory) {
+                        const cat = this.categories.find(c => c.id === this.preselectedCategory.id);
+                        if (cat) {
+                            this.selectCategory(cat).then(() => {
+                                if (this.preselectedSupplement) {
+                                    const supp = this.preselectedSupplement;
+                                    this.userInput = 'Θέλω πληροφορίες για το ' + supp.brand + ' - ' + supp.title;
+                                    this.showQuickReplies = false;
+                                    this.sendMessage();
+                                }
+                            });
+                        }
+                    } else if (this.preselectedGoal) {
+                        this.userInput = 'Θέλω συμπλήρωμα για ' + this.preselectedGoal.name_el;
+                        this.showQuickReplies = false;
+                        this.sendMessage();
+                    } else if (this.preselectedBrand) {
+                        this.userInput = 'Θέλω να δω τα καλύτερα προϊόντα της ' + this.preselectedBrand;
+                        this.showQuickReplies = false;
+                        this.sendMessage();
+                    }
+                },
 
                 getQuickReplies() {
                     if (!this.selectedCategory) return [];

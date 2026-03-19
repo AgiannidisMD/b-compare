@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\RecommendationApiController;
 use App\Http\Controllers\Api\StatsApiController;
 use App\Http\Controllers\Api\AnalyticsApiController;
 use App\Http\Controllers\Api\ExportApiController;
+use App\Http\Controllers\Api\BrowseApiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -118,6 +119,17 @@ Route::middleware('api')->group(function () {
         Route::get('/categories', [ExportApiController::class, 'categories']);
         Route::get('/conditions', [ExportApiController::class, 'conditions']);
         Route::get('/full', [ExportApiController::class, 'full']);
+    });
+
+    // =====================================================================
+    // BROWSE APIs
+    // =====================================================================
+    Route::prefix('browse')->group(function () {
+        Route::get('/functions', [BrowseApiController::class, 'functions']);
+        Route::get('/functions/{slug}/categories', [BrowseApiController::class, 'functionCategories']);
+        Route::get('/categories/{slug}/supplements', [BrowseApiController::class, 'categorySupplements']);
+        Route::get('/categories/{slug}/brands', [BrowseApiController::class, 'categoryBrands']);
+        Route::get('/brands', [BrowseApiController::class, 'brands']);
     });
 
     // =====================================================================

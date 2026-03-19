@@ -703,4 +703,121 @@ return [
         'notes' => 'Psyllium is the gold standard — soluble + insoluble, cholesterol-lowering. Start low, increase slowly. Always take with plenty of water.',
     ],
 
+    // =========================================================================
+    // 21. MULTIVITAMINS
+    // =========================================================================
+    'multivitamins' => [
+        'therapeutic_range' => [
+            'min' => 400,
+            'max' => 1000,
+            'optimal' => 800,
+            'unit' => 'mcg DFE (folate reference)',
+        ],
+        'preferred_forms' => [
+            'methylfolate' => 1.0, 'methylcobalamin' => 1.0,
+            'p-5-p' => 0.95, 'pyridoxal-5-phosphate' => 0.95,
+            'chelated minerals' => 0.90, 'd3' => 0.90,
+            'mixed tocopherols' => 0.85,
+        ],
+        'penalized_forms' => [
+            'folic acid' => -1.5, 'cyanocobalamin' => -1.5,
+            'dl-alpha tocopherol' => -1.0, 'zinc oxide' => -1.0,
+            'magnesium oxide' => -1.5,
+        ],
+        'red_flags' => [
+            'proprietary blend',
+            'folic acid.*prenatal',
+            'iron.*calcium.*same tablet',
+        ],
+        'key_ingredients' => ['multivitamin', 'multi vitamin'],
+        'cofactors' => [],
+        'notes' => 'Best multivitamins use methylated B vitamins and chelated minerals. Avoid those with folic acid and oxide mineral forms.',
+    ],
+
+    // =========================================================================
+    // 22. CREATINE
+    // =========================================================================
+    'creatine' => [
+        'therapeutic_range' => [
+            'min' => 3, 'max' => 10, 'optimal' => 5,
+            'unit' => 'g',
+        ],
+        'preferred_forms' => [
+            'creatine monohydrate' => 1.0, 'monohydrate' => 1.0,
+            'creapure' => 1.0,
+            'micronized' => 0.95,
+        ],
+        'penalized_forms' => [
+            'creatine ethyl ester' => -1.5,
+            'creatine hydrochloride' => -0.5,
+            'buffered creatine' => -0.5,
+        ],
+        'red_flags' => [
+            'proprietary blend',
+            'creatine.*liquid',
+        ],
+        'key_ingredients' => ['creatine', 'κρεατίνη'],
+        'cofactors' => [],
+        'notes' => 'Monohydrate is the most studied and effective form. CreaPure is the gold standard. 5g/day, no loading needed. Other forms are marketing gimmicks.',
+    ],
+
+    // =========================================================================
+    // 23. GREENS & SUPERFOODS
+    // =========================================================================
+    'greens-superfoods' => [
+        'therapeutic_range' => [
+            'min' => 3, 'max' => 15, 'optimal' => 8,
+            'unit' => 'g',
+        ],
+        'preferred_forms' => [
+            'organic' => 0.90,
+            'cold-pressed' => 0.90,
+            'freeze-dried' => 0.85,
+            'whole food' => 0.85,
+            'fermented' => 0.80,
+        ],
+        'penalized_forms' => [
+            'added sugar' => -2.0,
+            'artificial sweetener' => -1.0,
+            'artificial colors' => -1.5,
+        ],
+        'red_flags' => [
+            'proprietary blend',
+            'added sugar.*greens',
+            'artificial sweetener',
+        ],
+        'key_ingredients' => ['spirulina', 'chlorella', 'barley grass', 'wheat grass', 'greens', 'superfood'],
+        'cofactors' => ['probiotics', 'digestive enzymes', 'prebiotics'],
+        'notes' => 'Look for products listing actual amounts per ingredient, not proprietary blends. Organic and third-party tested preferred.',
+    ],
+
+    // =========================================================================
+    // 24. NMN / NAD+
+    // =========================================================================
+    'nmn-nad' => [
+        'therapeutic_range' => [
+            'min' => 250, 'max' => 1000, 'optimal' => 500,
+            'unit' => 'mg',
+        ],
+        'preferred_forms' => [
+            'β-nmn' => 1.0, 'beta-nmn' => 1.0,
+            'uthever' => 1.0,
+            'sublingual' => 0.95,
+            'liposomal' => 0.95,
+            'nicotinamide riboside' => 0.85,
+            'niagen' => 0.85,
+        ],
+        'penalized_forms' => [
+            'nicotinamide' => -1.0,
+            'niacin.*flush' => -0.5,
+        ],
+        'red_flags' => [
+            'proprietary blend',
+            'no purity testing',
+        ],
+        'key_ingredients' => ['nmn', 'nad+', 'nicotinamide mononucleotide', 'nicotinamide riboside'],
+        'cofactors' => ['resveratrol', 'tmg', 'trimethylglycine'],
+        'notes' => 'NMN and NR are NAD+ precursors. Uthever is a patented, purity-tested NMN. Sublingual delivery may improve bioavailability. Emerging research area.',
+    ],
+
 ];

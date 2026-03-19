@@ -3,9 +3,11 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\BrowseController;
 
-Route::get('/', [ChatController::class, 'index'])->name('chat');
-Route::get('/chat', [ChatController::class, 'index']);
+Route::get('/', [BrowseController::class, 'index'])->name('browse');
+Route::get('/browse', [BrowseController::class, 'index']);
+Route::get('/chat', [ChatController::class, 'index'])->name('chat');
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->name('dashboard');

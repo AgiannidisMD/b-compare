@@ -448,27 +448,31 @@ PROMPT;
 - **Καταστάσεις/Στόχοι:** {$conditionsList}
 {$constraintsText}
 {$evidenceSection}
-# ΣΥΣΤΗΜΑ ΒΑΘΜΟΛΟΓΗΣΗΣ (0-10)
+# ΣΥΣΤΗΜΑ ΒΑΘΜΟΛΟΓΗΣΗΣ (0-10) — Καθαρά κλινικό, χωρίς τιμή/κριτικές
 
 Τα συμπληρώματα έχουν προ-υπολογισμένες βαθμολογίες:
 
-1. **efficacy_score (35%)** - Αποτελεσματικότητα
-   - Βασίζεται σε: rating χρηστών, αριθμό κριτικών, ενεργά συστατικά
+1. **clinical_dose_score** - Επάρκεια δόσης vs θεραπευτικό εύρος
+   - 10 = βέλτιστη δόση, 5 = ελάχιστη, 1 = σοβαρά ανεπαρκής
 
-2. **quality_score (30%)** - Ποιότητα
-   - Βασίζεται σε: πιστοποιήσεις (GMP, third-party tested), φήμη brand
+2. **efficacy_score (40%)** - Κλινική αποτελεσματικότητα
+   - Δόση (50%) + Μορφή συστατικού (30%) + Συνεργιστικά (20%)
 
 3. **bioavailability_score (25%)** - Βιοδιαθεσιμότητα
-   - ΚΡΙΣΙΜΟ: Η μορφή του συστατικού καθορίζει πόσο απορροφάται
-   - Παράδειγμα Μαγνησίου:
-     * Bisglycinate/Glycinate: 90% απορρόφηση (ΑΡΙΣΤΟ)
-     * Citrate: 65% απορρόφηση (ΚΑΛΟ)
-     * Oxide: 20% απορρόφηση (ΦΤΩΧΟ - αλλά φθηνό)
+   - Μορφή συστατικού (70%) + Μέθοδος παράδοσης (30%)
 
-4. **formulation_score (10%)** - Σύνθεση
-   - Συνεργιστικά συστατικά, μορφή δόσης, καθαρότητα
+4. **quality_score (20%)** - Ποιότητα & Ασφάλεια
+   - Πιστοποιήσεις (50%) + Πληρότητα δεδομένων (30%) + Απουσία red flags (20%)
 
-**overall_recommendation_score** = Σταθμισμένος μέσος όρος
+5. **formulation_score (15%)** - Ποιότητα σύνθεσης
+
+6. **brand_trust_score** - Αξιοπιστία μάρκας (μέσος όρος σε όλα τα προϊόντα)
+
+7. **category_rank** - Κατάταξη εντός κατηγορίας (#1 = καλύτερο)
+
+8. **red_flags** - Κλινικές προειδοποιήσεις (π.χ. "Severely underdosed", "Poor form")
+
+**overall_recommendation_score** = Σταθμισμένος μέσος όρος χωρίς τιμή/κριτικές
 
 # ΚΑΝΟΝΕΣ ΕΠΙΛΟΓΗΣ
 
@@ -673,14 +677,15 @@ PROMPT;
             'id' => $s->id,
             'brand' => $s->brand,
             'title' => $s->title,
-            'price' => $s->current_price,
-            'rating' => $s->rating,
-            'review_count' => $s->review_count,
             'overall_score' => $s->overall_recommendation_score,
+            'clinical_dose_score' => $s->clinical_dose_score,
             'efficacy_score' => $s->efficacy_score,
             'quality_score' => $s->quality_score,
             'bioavailability_score' => $s->bioavailability_score,
             'formulation_score' => $s->formulation_score,
+            'category_rank' => $s->category_rank,
+            'brand_trust_score' => $s->brand_trust_score,
+            'red_flags' => $s->red_flags_detected,
             'dosage_form' => $s->dosage_form,
             'active_ingredients' => $s->active_ingredients,
             'certification_flags' => $s->certification_flags,

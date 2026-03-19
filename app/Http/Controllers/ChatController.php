@@ -22,10 +22,30 @@ class ChatController extends Controller
         $this->ai = $ai;
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $categories = SupplementCategory::all();
-        return view('chat', compact('categories'));
+
+        // Pre-select context from browse page
+        $preselectedCategory = null;
+        $preselectedSupplement = null;
+        $preselectedGoal = null;
+        $preselectedBrand = null;
+
+        if ($request->has('category')) {
+            $preselectedCategory = SupplementCategory::where('slug', $request->category)->first();
+        }
+        if ($request->has('supplement')) {
+            $preselectedSupplement = Supplement::find($request->supplement);
+        }
+        if ($request->has('goal')) {
+            $preselectedGoal = \App\Models\HealthFunction::where('slug', $request->goal)->first();
+        }
+        if ($request->has('brand')) {
+            $preselectedBrand = $request->brand;
+        }
+
+        return view('chat', compact('categories', 'preselectedCategory', 'preselectedSupplement', 'preselectedGoal', 'preselectedBrand'));
     }
 
     public function sendMessage(Request $request)
