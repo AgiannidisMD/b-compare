@@ -16,7 +16,7 @@ class AutoCategorizeCommand extends Command
     {
         // Step 1: Ensure new categories exist
         $this->info('Step 1: Ensuring all categories exist...');
-        $this->call('db:seed', ['--class' => 'SupplementCategorySeeder']);
+        $this->call('db:seed', ['--class' => 'SupplementCategorySeeder', '--force' => true]);
 
         // Load all categories
         $categories = SupplementCategory::all()->keyBy('slug');
@@ -44,7 +44,7 @@ class AutoCategorizeCommand extends Command
             'electrolytes' => 'electrolytes',
             'joint support' => 'joint-support',
             'sleep support' => 'sleep-support',
-            'herbal/adaptogen' => 'herbal-adaptogens',
+            'herbal/adaptogen' => 'herbaladaptogens',
             'fiber' => 'fiber-supplements',
             'multivitamin' => 'multivitamins',
             'creatine' => 'creatine',
@@ -106,7 +106,7 @@ class AutoCategorizeCommand extends Command
             'electrolytes' => ['electrolyte', 'ηλεκτρολύτ'],
             'joint-support' => ['joint', 'glucosamine', 'chondroitin', 'msm', 'γλυκοζαμίνη', 'αρθρ'],
             'sleep-support' => ['sleep', 'melatonin', 'ύπνο', 'μελατονίνη'],
-            'herbal-adaptogens' => ['ashwagandha', 'rhodiola', 'ginseng', 'turmeric', 'curcumin', 'milk thistle', 'silymarin', 'echinacea', 'valerian', 'adaptogen', 'lion\'s mane', 'reishi', 'cordyceps', 'maca', 'holy basil'],
+            'herbaladaptogens' => ['ashwagandha', 'rhodiola', 'ginseng', 'turmeric', 'curcumin', 'milk thistle', 'silymarin', 'echinacea', 'valerian', 'adaptogen', 'maca', 'holy basil'],
             'fiber-supplements' => ['fiber', 'psyllium', 'φυτικές ίνες', 'inulin'],
             'multivitamins' => ['multivitamin', 'πολυβιταμίνη', 'multi vitamin', 'two-per-day', 'one daily'],
             'creatine' => ['creatine', 'κρεατίνη'],
