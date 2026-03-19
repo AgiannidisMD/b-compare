@@ -41,6 +41,13 @@ class SupplementCategorySeeder extends Seeder
             ['name' => 'NMN / NAD+', 'icon' => '🧪'],
             ['name' => 'Vitamins (Other)', 'icon' => '💎'],
             ['name' => 'Inositol', 'icon' => '🔄'],
+            ['name' => 'Mushroom Complex', 'icon' => '🍄'],
+            ['name' => 'Berberine', 'icon' => '🌱'],
+            ['name' => 'Biotin', 'icon' => '💇'],
+            ['name' => "Men's Health / Prostate", 'icon' => '♂️'],
+            ['name' => 'Vitamin K', 'icon' => '🩸'],
+            ['name' => 'Prenatal & Fertility', 'icon' => '🤰'],
+            ['name' => 'Selenium', 'icon' => '🔬'],
             ['name' => 'Other Supplements', 'icon' => '📦'],
         ];
 

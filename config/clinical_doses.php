@@ -851,4 +851,200 @@ return [
         'notes' => 'Myo-inositol is the most studied form, especially for PCOS (4000mg/day) and insulin resistance. The 40:1 ratio of myo:d-chiro mirrors the body\'s natural ratio. Often combined with folate for fertility. Also studied for anxiety and OCD at 12-18g/day. Must be powder form at therapeutic doses — capsules cannot deliver enough.',
     ],
 
+    // =========================================================================
+    // 26. MUSHROOM COMPLEX
+    // =========================================================================
+    'mushroom-complex' => [
+        'therapeutic_range' => [
+            'min' => 500, 'max' => 3000, 'optimal' => 1000,
+            'unit' => 'mg',
+        ],
+        'preferred_forms' => [
+            'fruiting body' => 1.0,
+            'fruiting bodies' => 1.0,
+            'dual extract' => 0.95,
+            'hot water extract' => 0.90,
+            'standardized' => 0.85,
+            'beta-glucan' => 0.90,
+            '1:1 extract' => 0.80,
+        ],
+        'penalized_forms' => [
+            'mycelium on grain' => -2.0,
+            'mycelium' => -1.0,
+            'biomass' => -1.5,
+        ],
+        'red_flags' => [
+            'proprietary blend',
+            'mycelium on grain',
+            'grown on rice',
+            'no beta-glucan content',
+        ],
+        'key_ingredients' => ['lion\'s mane', 'lions mane', 'reishi', 'cordyceps', 'chaga', 'turkey tail', 'maitake', 'shiitake', 'mushroom', 'μανιτάρι'],
+        'cofactors' => ['vitamin c', 'black pepper', 'piperine'],
+        'notes' => 'Fruiting body extracts are far superior to mycelium-on-grain (which is mostly starch). Look for beta-glucan content >20%. Lion\'s Mane for cognition (NGF), Reishi for immune/sleep, Cordyceps for energy/endurance.',
+    ],
+
+    // =========================================================================
+    // 27. BERBERINE
+    // =========================================================================
+    'berberine' => [
+        'therapeutic_range' => [
+            'min' => 500, 'max' => 1500, 'optimal' => 1000,
+            'unit' => 'mg',
+        ],
+        'preferred_forms' => [
+            'berberine hcl' => 1.0,
+            'dihydroberberine' => 1.0,
+            'berberine phytosome' => 0.95,
+            'berberine with mct' => 0.90,
+        ],
+        'penalized_forms' => [
+            'berberine sulfate' => -0.5,
+        ],
+        'red_flags' => [
+            'proprietary blend',
+            'underdosed berberine',
+        ],
+        'key_ingredients' => ['berberine', 'βερβερίνη'],
+        'cofactors' => ['alpha lipoic acid', 'chromium', 'cinnamon', 'milk thistle'],
+        'notes' => 'Berberine has metformin-like effects on blood sugar — take 500mg 2-3x/day with meals. Dihydroberberine is 5x more bioavailable at lower doses. Can lower CoQ10 levels — consider supplementing. Not for pregnant/nursing women.',
+    ],
+
+    // =========================================================================
+    // 28. BIOTIN
+    // =========================================================================
+    'biotin' => [
+        'therapeutic_range' => [
+            'min' => 2500, 'max' => 10000, 'optimal' => 5000,
+            'unit' => 'mcg',
+        ],
+        'preferred_forms' => [
+            'd-biotin' => 1.0,
+            'biotin' => 0.85,
+        ],
+        'penalized_forms' => [],
+        'red_flags' => [
+            'proprietary blend',
+        ],
+        'key_ingredients' => ['biotin', 'βιοτίνη', 'vitamin b7', 'vitamin h'],
+        'cofactors' => ['zinc', 'vitamin c', 'collagen', 'keratin'],
+        'notes' => 'IMPORTANT: High-dose biotin (>5000mcg) interferes with blood test results — especially troponin (heart attack marker) and thyroid panels. Stop biotin 48-72 hours before blood tests. Effective for brittle nails at 2500mcg/day. Hair growth evidence is limited to deficiency states.',
+    ],
+
+    // =========================================================================
+    // 29. MEN\'S HEALTH / PROSTATE
+    // =========================================================================
+    'mens-health-prostate' => [
+        'therapeutic_range' => [
+            'min' => 160, 'max' => 320, 'optimal' => 320,
+            'unit' => 'mg (saw palmetto reference)',
+        ],
+        'preferred_forms' => [
+            'saw palmetto extract' => 1.0,
+            'supercritical co2 extract' => 1.0,
+            'standardized 85% fatty acids' => 0.95,
+            'beta-sitosterol' => 0.90,
+        ],
+        'penalized_forms' => [
+            'saw palmetto powder' => -1.5,
+            'raw berry powder' => -1.5,
+        ],
+        'red_flags' => [
+            'proprietary blend',
+            'saw palmetto powder.*premium',
+        ],
+        'key_ingredients' => ['saw palmetto', 'pygeum', 'beta-sitosterol', 'stinging nettle', 'prostate', 'προστάτη', 'pumpkin seed'],
+        'cofactors' => ['zinc', 'selenium', 'lycopene', 'vitamin d'],
+        'notes' => 'Saw palmetto extract (not powder) at 320mg/day is the standard for BPH symptoms. Must be liposterolic extract standardized to 85-95% fatty acids. Powder form is significantly less effective. Combine with zinc (15-30mg) and selenium.',
+    ],
+
+    // =========================================================================
+    // 30. VITAMIN K
+    // =========================================================================
+    'vitamin-k' => [
+        'therapeutic_range' => [
+            'min' => 90, 'max' => 200, 'optimal' => 120,
+            'unit' => 'mcg',
+        ],
+        'preferred_forms' => [
+            'mk-7' => 1.0,
+            'menaquinone-7' => 1.0,
+            'mk-4' => 0.85,
+            'menaquinone-4' => 0.85,
+            'k2 mk-7' => 1.0,
+        ],
+        'penalized_forms' => [
+            'k1' => -0.5,
+            'phylloquinone' => -0.5,
+        ],
+        'red_flags' => [
+            'proprietary blend',
+            'vitamin k1 only.*bone health',
+        ],
+        'key_ingredients' => ['vitamin k', 'βιταμίνη k', 'mk-7', 'mk-4', 'menaquinone', 'k2'],
+        'cofactors' => ['vitamin d3', 'calcium', 'magnesium'],
+        'notes' => 'K2 MK-7 has the longest half-life (72 hours vs 1-2 hours for MK-4). Critical to pair with Vitamin D — D increases calcium absorption, K2 directs it to bones instead of arteries. CONTRAINDICATED with warfarin/blood thinners — always check medications.',
+    ],
+
+    // =========================================================================
+    // 31. PRENATAL & FERTILITY
+    // =========================================================================
+    'prenatal-fertility' => [
+        'therapeutic_range' => [
+            'min' => 400, 'max' => 800, 'optimal' => 600,
+            'unit' => 'mcg DFE (folate reference)',
+        ],
+        'preferred_forms' => [
+            'methylfolate' => 1.0,
+            'l-methylfolate' => 1.0,
+            '5-mthf' => 1.0,
+            'quatrefolic' => 1.0,
+            'methylcobalamin' => 0.95,
+            'iron bisglycinate' => 0.90,
+            'chelated minerals' => 0.85,
+        ],
+        'penalized_forms' => [
+            'folic acid' => -2.5,
+            'cyanocobalamin' => -1.5,
+            'ferrous sulfate' => -1.0,
+        ],
+        'red_flags' => [
+            'folic acid.*prenatal',
+            'cyanocobalamin.*pregnancy',
+            'proprietary blend',
+            'no choline',
+            'no iodine',
+        ],
+        'key_ingredients' => ['prenatal', 'εγκυμοσύνη', 'fertility', 'γονιμότητα', 'folate', 'φολικό', 'choline', 'dha'],
+        'cofactors' => ['choline', 'dha', 'iodine', 'iron', 'vitamin d'],
+        'notes' => 'CRITICAL: Prenatals MUST use methylfolate, NOT folic acid — ~40% of women have MTHFR variants and cannot convert folic acid efficiently. Must include: folate (600mcg), iron (27mg bisglycinate), choline (150-550mg), iodine (150mcg), DHA (200mg+). Folic acid in prenatals is a major red flag.',
+    ],
+
+    // =========================================================================
+    // 32. SELENIUM
+    // =========================================================================
+    'selenium' => [
+        'therapeutic_range' => [
+            'min' => 55, 'max' => 200, 'optimal' => 100,
+            'unit' => 'mcg',
+        ],
+        'preferred_forms' => [
+            'selenomethionine' => 1.0,
+            'selenium methionine' => 1.0,
+            'selenocysteine' => 0.90,
+            'selenium yeast' => 0.85,
+            'sodium selenite' => 0.55,
+        ],
+        'penalized_forms' => [
+            'sodium selenate' => -1.0,
+        ],
+        'red_flags' => [
+            'proprietary blend',
+            'selenium.*500mcg',
+        ],
+        'key_ingredients' => ['selenium', 'σελήνιο', 'selenomethionine'],
+        'cofactors' => ['vitamin e', 'iodine', 'zinc'],
+        'notes' => 'Selenomethionine is the best-absorbed form. Critical for thyroid function (required for T4→T3 conversion). Do NOT exceed 200mcg/day — toxicity risk (selenosis) above 400mcg. Brazil nuts are the richest food source (1 nut ≈ 70mcg).',
+    ],
+
 ];
