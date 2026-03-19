@@ -426,7 +426,7 @@
                                 <div :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'" class="animate-fade-in">
                                     <div :class="msg.role === 'user' ? 'bubble-user' : 'bubble-assistant'"
                                          class="px-5 py-3 max-w-[85%] sm:max-w-[75%] text-[15px] leading-relaxed"
-                                         x-text="msg.content"></div>
+                                         x-html="formatMessage(msg.content)"></div>
                                 </div>
                             </template>
 
@@ -535,7 +535,7 @@
                                                     <div class="mt-4 pt-4" style="border-top: 1px solid var(--border);">
                                                         <p class="text-sm leading-relaxed" style="color: var(--charcoal-light);">
                                                             <span class="font-medium" style="color: var(--charcoal);">Γιατί το προτείνουμε:</span>
-                                                            <span x-text="rec.why_best"></span>
+                                                            <span x-html="formatMessage(rec.why_best)"></span>
                                                         </p>
                                                     </div>
                                                 </template>
@@ -544,7 +544,7 @@
                                                 <template x-if="rec.dosage">
                                                     <p class="text-sm mt-3" style="color: var(--gold);">
                                                         <span class="font-medium">Δοσολογία:</span>
-                                                        <span x-text="rec.dosage"></span>
+                                                        <span x-html="formatMessage(rec.dosage)"></span>
                                                     </p>
                                                 </template>
 
@@ -699,6 +699,19 @@
 
         function getCategoryIcon(slug) {
             return categoryIcons[slug] || '<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>';
+        }
+
+        function formatMessage(text) {
+            if (!text) return '';
+            // Strip markdown and convert to clean HTML
+            return text
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')     // **bold** -> <strong>
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')                  // *italic* -> <em>
+                .replace(/^[•\-]\s*/gm, '&bull; ')                     // bullet points -> clean dots
+                .replace(/^#{1,3}\s+(.+)$/gm, '<strong>$1</strong>')   // headers -> bold
+                .replace(/`(.+?)`/g, '$1')                             // `code` -> plain text
+                .replace(/\n/g, '<br>')                                // newlines -> line breaks
+                ;
         }
 
         function chatApp() {
