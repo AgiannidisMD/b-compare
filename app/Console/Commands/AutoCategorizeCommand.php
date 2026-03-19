@@ -164,22 +164,34 @@ class AutoCategorizeCommand extends Command
         $this->info("  Categorized {$scanned} by title/ingredient scan.");
 
         // Step 4: Fix miscategorized products — override wrong comparison_group
-        // These are products whose TITLE clearly says the primary ingredient
-        // but comparison_group put them in the wrong category
+        // Only override if the keyword is the PRIMARY focus of the product title
+        // (appears early in title or is the main ingredient name)
         $this->info('Step 4: Fixing miscategorized products by title...');
 
+        // Primary keywords: if ANY of these appear in title, override category
+        // These are specific enough to not cause false positives
         $overrideMap = [
             'inositol' => ['inositol', 'ινοσιτόλη', 'myo-inositol', 'd-chiro-inositol', 'myo inositol'],
-            'mushroom-complex' => ['lion\'s mane', 'lions mane', 'reishi extract', 'cordyceps extract', 'mushroom complex', 'mushroom blend'],
             'berberine' => ['berberine', 'βερβερίνη'],
+            'selenium' => ['selenium ', 'σελήνιο', 'selenomethionine'],
+            'creatine' => ['creatine', 'κρεατίνη'],
+            'multivitamins' => ['multivitamin', 'πολυβιταμίνη', 'multi vitamin', 'two-per-day', 'one daily multivitamin'],
+            'prenatal-fertility' => ['prenatal', 'εγκυμοσύνη', 'γονιμότητα'],
+            'amino-acids' => ['l-glutamine', 'l glutamine', 'γλουταμίνη'],
+        ];
+
+        // These need extra care — only override if it's clearly the MAIN product
+        // (keyword appears in first 60 chars of title = primary ingredient)
+        $carefulOverrideMap = [
             'biotin' => ['biotin', 'βιοτίνη'],
-            'mens-health-prostate' => ['saw palmetto', 'prostate support', 'prostate health', 'προστάτη'],
-            'vitamin-k' => ['vitamin k2', 'βιταμίνη k2', 'mk-7'],
-            'prenatal-fertility' => ['prenatal', 'εγκυμοσύνη'],
-            'selenium' => ['selenium', 'σελήνιο', 'selenomethionine'],
+            'mushroom-complex' => ['lion\'s mane', 'lions mane', 'reishi', 'cordyceps', 'chaga', 'turkey tail', 'mushroom complex', 'mushroom blend', 'μανιτάρι'],
+            'mens-health-prostate' => ['saw palmetto', 'prostate', 'προστάτη'],
+            'vitamin-k' => ['vitamin k2', 'βιταμίνη k2', 'menaquinone-7'],
         ];
 
         $overridden = 0;
+
+        // Direct overrides — keyword anywhere in title
         foreach ($overrideMap as $slug => $titleKeywords) {
             $cat = $categories[$slug] ?? null;
             if (!$cat) continue;
@@ -199,18 +211,47 @@ class AutoCategorizeCommand extends Command
                 });
         }
 
+        // Careful overrides — keyword must be in first 60 chars (= primary ingredient)
+        foreach ($carefulOverrideMap as $slug => $titleKeywords) {
+            $cat = $categories[$slug] ?? null;
+            if (!$cat) continue;
+
+            Supplement::where('category_id', '!=', $cat->id)
+                ->chunkById(500, function ($supplements) use ($titleKeywords, $cat, &$overridden) {
+                    foreach ($supplements as $supplement) {
+                        $title = strtolower($supplement->title ?? '');
+                        $titleStart = mb_substr($title, 0, 60);
+                        foreach ($titleKeywords as $keyword) {
+                            if (str_contains($titleStart, strtolower($keyword))) {
+                                $supplement->update(['category_id' => $cat->id]);
+                                $overridden++;
+                                break;
+                            }
+                        }
+                    }
+                });
+        }
+
         $this->info("  Fixed {$overridden} miscategorized products.");
 
-        // Step 5: Summary
+        // Step 5: Update category product counts
+        $this->info('Step 5: Updating category counts...');
+        $allCategories = SupplementCategory::all();
+        foreach ($allCategories as $cat) {
+            $count = Supplement::where('category_id', $cat->id)->count();
+            $cat->update(['product_count' => $count]);
+        }
+
+        // Step 6: Summary
         $this->newLine();
         $nullCount = Supplement::whereNull('category_id')->count();
         $this->info("DONE! Uncategorized remaining: {$nullCount}");
 
         $this->newLine();
         $this->info('Category distribution:');
-        $cats = SupplementCategory::withCount('supplements')->orderByDesc('supplements_count')->get();
+        $cats = SupplementCategory::where('product_count', '>', 0)->orderByDesc('product_count')->get();
         foreach ($cats as $cat) {
-            $this->line("  {$cat->icon} {$cat->name}: {$cat->supplements_count}");
+            $this->line("  {$cat->name}: {$cat->product_count}");
         }
 
         return Command::SUCCESS;
