@@ -820,4 +820,35 @@ return [
         'notes' => 'NMN and NR are NAD+ precursors. Uthever is a patented, purity-tested NMN. Sublingual delivery may improve bioavailability. Emerging research area.',
     ],
 
+    // =========================================================================
+    // 25. INOSITOL
+    // =========================================================================
+    'inositol' => [
+        'therapeutic_range' => [
+            'min' => 2000,
+            'max' => 4000,
+            'optimal' => 4000,
+            'unit' => 'mg',
+        ],
+        'preferred_forms' => [
+            'myo-inositol' => 1.0,
+            'myo inositol' => 1.0,
+            'd-chiro-inositol' => 0.95,
+            'd-chiro inositol' => 0.95,
+            '40:1 ratio' => 1.0,          // optimal myo:d-chiro ratio
+            '40:1' => 1.0,
+        ],
+        'penalized_forms' => [
+            'inositol hexaphosphate' => -1.0,  // IP6, different use
+        ],
+        'red_flags' => [
+            'proprietary blend',
+            'underdosed inositol',
+            'inositol.*gummy',  // hard to fit 2000-4000mg in gummies
+        ],
+        'key_ingredients' => ['inositol', 'ινοσιτόλη', 'myo-inositol', 'd-chiro-inositol'],
+        'cofactors' => ['folate', 'vitamin d', 'chromium', 'magnesium', 'omega-3'],
+        'notes' => 'Myo-inositol is the most studied form, especially for PCOS (4000mg/day) and insulin resistance. The 40:1 ratio of myo:d-chiro mirrors the body\'s natural ratio. Often combined with folate for fertility. Also studied for anxiety and OCD at 12-18g/day. Must be powder form at therapeutic doses — capsules cannot deliver enough.',
+    ],
+
 ];

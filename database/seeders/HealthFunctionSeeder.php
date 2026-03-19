@@ -79,6 +79,7 @@ class HealthFunctionSeeder extends Seeder
                 'Magnesium' => 9,
                 'B-Vitamins' => 7,
                 'Amino Acids' => 6,
+                'Inositol' => 7,
             ],
             'joint-health' => [
                 'Joint Support' => 10,
@@ -118,6 +119,7 @@ class HealthFunctionSeeder extends Seeder
             'weight-management' => [
                 'Fiber Supplements' => 9,
                 'Protein Supplements' => 8,
+                'Inositol' => 7,
                 'Greens & Superfoods' => 6,
                 'B-Vitamins' => 5,
             ],
@@ -139,6 +141,7 @@ class HealthFunctionSeeder extends Seeder
                 'Herbal/Adaptogens' => 10,
                 'Magnesium' => 8,
                 'B-Vitamins' => 8,
+                'Inositol' => 8,
                 'Omega-3 & Fish Oil' => 7,
                 'Amino Acids' => 6,
                 'Vitamin D' => 5,

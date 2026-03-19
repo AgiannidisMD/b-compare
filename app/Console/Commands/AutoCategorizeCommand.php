@@ -51,6 +51,7 @@ class AutoCategorizeCommand extends Command
             'greens/superfoods' => 'greens-superfoods',
             'nmn/nad+' => 'nmn-nad',
             'vitamins (other)' => 'vitamins-other',
+            'inositol' => 'inositol',
             'other supplement' => 'other-supplements',
             'other/uncategorized' => 'other-supplements',
             'multi-mineral' => 'other-supplements',
@@ -103,6 +104,7 @@ class AutoCategorizeCommand extends Command
             'creatine' => ['creatine', 'κρεατίνη'],
             'greens-superfoods' => ['greens', 'superfood', 'spirulina', 'chlorella', 'barley grass', 'wheat grass'],
             'nmn-nad' => ['nmn', 'nad+', 'nicotinamide mononucleotide', 'nicotinamide riboside'],
+            'inositol' => ['inositol', 'ινοσιτόλη', 'myo-inositol', 'd-chiro-inositol'],
             'vitamins-other' => ['vitamin e', 'vitamin k', 'βιταμίνη e', 'βιταμίνη k', 'biotin', 'βιοτίνη'],
         ];
 

@@ -40,6 +40,7 @@ class SupplementCategorySeeder extends Seeder
             ['name' => 'Greens & Superfoods', 'icon' => '🥦'],
             ['name' => 'NMN / NAD+', 'icon' => '🧪'],
             ['name' => 'Vitamins (Other)', 'icon' => '💎'],
+            ['name' => 'Inositol', 'icon' => '🔄'],
             ['name' => 'Other Supplements', 'icon' => '📦'],
         ];
 
