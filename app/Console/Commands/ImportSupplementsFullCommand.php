@@ -117,6 +117,13 @@ class ImportSupplementsFullCommand extends Command
         $finalCount = Supplement::count();
         $this->info("DONE! Imported: {$imported}, Skipped: {$skipped}, Total: {$finalCount}/{$totalTarget}");
 
+        // Auto-score after import
+        if ($imported > 0) {
+            $this->info('Running auto-categorize and scoring...');
+            $this->call('supplements:auto-categorize');
+            $this->call('supplements:calculate-scores', ['--scores-only' => true]);
+        }
+
         return Command::SUCCESS;
     }
 }

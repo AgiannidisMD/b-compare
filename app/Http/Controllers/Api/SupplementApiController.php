@@ -146,27 +146,42 @@ class SupplementApiController extends Controller
             ->get()
             ->keyBy('id');
 
-        // Calculate comparison metrics
-        $comparison = [
-            'supplements' => $supplements->values(),
-            'comparison' => [
-                'highest_score' => $supplements->max('overall_recommendation_score'),
-                'lowest_score' => $supplements->min('overall_recommendation_score'),
-                'avg_score' => round($supplements->avg('overall_recommendation_score'), 2),
-                'highest_efficacy' => $supplements->max('efficacy_score'),
-                'highest_quality' => $supplements->max('quality_score'),
-                'highest_bioavailability' => $supplements->max('bioavailability_score'),
-                'price_range' => [
-                    'min' => $supplements->min('current_price'),
-                    'max' => $supplements->max('current_price'),
-                ],
-            ],
-            'winner' => $supplements->sortByDesc('overall_recommendation_score')->first(),
-        ];
+        $items = $supplements->values()->map(fn($s) => [
+            'id' => $s->id,
+            'brand' => $s->brand,
+            'title' => $s->title,
+            'category' => $s->category?->name,
+            'overall_score' => $s->overall_recommendation_score,
+            'clinical_dose_score' => $s->clinical_dose_score,
+            'efficacy_score' => $s->efficacy_score,
+            'bioavailability_score' => $s->bioavailability_score,
+            'quality_score' => $s->quality_score,
+            'formulation_score' => $s->formulation_score,
+            'brand_trust_score' => $s->brand_trust_score,
+            'category_rank' => $s->category_rank,
+            'dosage_form' => $s->dosage_form,
+            'serving_size' => ($s->serving_size_value ?? '') . ' ' . ($s->serving_size_unit ?? ''),
+            'servings_per_container' => $s->servings_per_container,
+            'active_ingredients' => $s->active_ingredients,
+            'red_flags' => $s->red_flags_detected ?? [],
+            'certification_flags' => $s->certification_flags,
+            'image_url' => $s->image_url,
+            'product_url' => $s->product_url,
+        ]);
+
+        $winner = $supplements->sortByDesc('overall_recommendation_score')->first();
 
         return response()->json([
             'success' => true,
-            'data' => $comparison,
+            'data' => [
+                'supplements' => $items,
+                'summary' => [
+                    'best_overall' => $winner?->id,
+                    'best_dose' => $supplements->sortByDesc('clinical_dose_score')->first()?->id,
+                    'best_bioavailability' => $supplements->sortByDesc('bioavailability_score')->first()?->id,
+                    'best_quality' => $supplements->sortByDesc('quality_score')->first()?->id,
+                ],
+            ],
         ]);
     }
 

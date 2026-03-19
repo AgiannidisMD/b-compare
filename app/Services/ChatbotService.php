@@ -182,6 +182,13 @@ class ChatbotService
         // Get evidence-based knowledge for current context
         $contextualKnowledge = $this->getContextualKnowledge($conversation);
 
+        // Get clinical knowledge from clinical_doses.php
+        $categorySlug = $conversation->selected_category_id
+            ? SupplementCategory::find($conversation->selected_category_id)?->slug
+            : null;
+        $clinicalKnowledge = $this->buildClinicalKnowledge($categorySlug);
+        $interactionWarnings = $this->buildInteractionWarnings($categorySlug);
+
         // Get user memory context
         $memoryContext = $userProfile ? $userProfile->getMemoryContext() : '';
 
@@ -207,7 +214,7 @@ class ChatbotService
 # ΤΡΕΧΟΥΣΑ ΚΑΤΑΣΤΑΣΗ ΣΥΝΟΜΙΛΙΑΣ
 - Επιλεγμένη κατηγορία: {$currentCategory}
 - Αναγνωρισμένες καταστάσεις: {$conditionsText}
-{$memoryContext}{$contextualKnowledge}
+{$memoryContext}{$clinicalKnowledge}{$interactionWarnings}{$contextualKnowledge}
 # ΚΑΝΟΝΕΣ ΣΥΝΟΜΙΛΙΑΣ
 
 1. **Κάνε ΜΙΑ ερώτηση τη φορά** - Μην ρωτάς πολλά πράγματα ταυτόχρονα
@@ -409,6 +416,124 @@ PROMPT;
     }
 
     /**
+     * Build clinical knowledge section from clinical_doses.php config
+     */
+    private function buildClinicalKnowledge(?string $categorySlug): string
+    {
+        if (!$categorySlug) return '';
+
+        $config = config("clinical_doses.{$categorySlug}");
+        if (!$config) return '';
+
+        $sections = ["# ΚΛΙΝΙΚΗ ΓΝΩΣΗ ΓΙΑ ΑΥΤΗ ΤΗΝ ΚΑΤΗΓΟΡΙΑ\n"];
+
+        // Therapeutic range
+        if (!empty($config['therapeutic_range'])) {
+            $r = $config['therapeutic_range'];
+            $sections[] = "## Θεραπευτικό εύρος δόσης";
+            $sections[] = "- Ελάχιστη: {$r['min']} {$r['unit']}";
+            $sections[] = "- Βέλτιστη: {$r['optimal']} {$r['unit']}";
+            $sections[] = "- Μέγιστη ασφαλής: {$r['max']} {$r['unit']}";
+        }
+
+        // Preferred forms
+        if (!empty($config['preferred_forms'])) {
+            $sections[] = "\n## Καλύτερες μορφές (από καλύτερη σε χειρότερη)";
+            arsort($config['preferred_forms']);
+            foreach ($config['preferred_forms'] as $form => $rating) {
+                $pct = round($rating * 100);
+                $sections[] = "- **{$form}**: {$pct}% βαθμολογία απορρόφησης";
+            }
+        }
+
+        // Penalized forms
+        if (!empty($config['penalized_forms'])) {
+            $sections[] = "\n## Κακές μορφές (ΑΠΟΦΥΓΗ)";
+            foreach ($config['penalized_forms'] as $form => $penalty) {
+                $sections[] = "- **{$form}**: ποινή {$penalty} — ΧΑΜΗΛΗ απορρόφηση";
+            }
+        }
+
+        // Red flags
+        if (!empty($config['red_flags'])) {
+            $sections[] = "\n## Red flags (προειδοποιήσεις ποιότητας)";
+            foreach ($config['red_flags'] as $flag) {
+                $sections[] = "- {$flag}";
+            }
+        }
+
+        // Cofactors
+        if (!empty($config['cofactors'])) {
+            $sections[] = "\n## Συνεργιστικά συστατικά (cofactors)";
+            $sections[] = "- " . implode(', ', $config['cofactors']);
+        }
+
+        // Clinical notes
+        if (!empty($config['notes'])) {
+            $sections[] = "\n## Κλινικές σημειώσεις";
+            $sections[] = $config['notes'];
+        }
+
+        return implode("\n", $sections) . "\n";
+    }
+
+    /**
+     * Build interaction warnings section for the AI prompt
+     */
+    private function buildInteractionWarnings(?string $categorySlug): string
+    {
+        if (!$categorySlug) return '';
+
+        $interactions = config('interactions', []);
+        if (empty($interactions)) return '';
+
+        $relevant = [];
+        $categoryKeywords = [
+            'omega-3-fish-oil' => ['omega-3', 'omega'],
+            'magnesium' => ['magnesium'],
+            'vitamin-d' => ['vitamin-d'],
+            'calcium' => ['calcium'],
+            'iron' => ['iron'],
+            'zinc' => ['zinc'],
+            'coq10' => ['coq10'],
+            'collagen' => ['collagen'],
+            'vitamin-c' => ['vitamin-c'],
+            'sleep-support' => ['melatonin'],
+            'herbal-adaptogens' => ['curcumin', 'st-johns-wort'],
+            'vitamins-other' => ['vitamin-e'],
+        ];
+
+        $keywords = $categoryKeywords[$categorySlug] ?? [$categorySlug];
+
+        foreach ($interactions as $interaction) {
+            foreach ($keywords as $kw) {
+                if (str_contains($interaction['supplement_a'], $kw) || str_contains($interaction['supplement_b'], $kw)) {
+                    $relevant[] = $interaction;
+                    break;
+                }
+            }
+        }
+
+        if (empty($relevant)) return '';
+
+        $sections = ["\n# ΑΛΛΗΛΕΠΙΔΡΑΣΕΙΣ & ΠΡΟΕΙΔΟΠΟΙΗΣΕΙΣ\n"];
+        $sections[] = "ΣΗΜΑΝΤΙΚΟ: Αν ο χρήστης αναφέρει ότι παίρνει κάποιο από τα παρακάτω, ΠΡΕΠΕΙ να τον ενημερώσεις.\n";
+
+        foreach ($relevant as $i) {
+            $type = match ($i['type']) {
+                'avoid' => 'ΑΠΟΦΥΓΗ',
+                'separate' => 'ΞΕΧΩΡΙΣΤΑ',
+                'monitor' => 'ΠΑΡΑΚΟΛΟΥΘΗΣΗ',
+                'synergy' => 'ΣΥΝΕΡΓΙΑ',
+                default => $i['type'],
+            };
+            $sections[] = "- [{$type}] {$i['supplement_a']} + {$i['supplement_b']}: {$i['warning_el']}";
+        }
+
+        return implode("\n", $sections) . "\n";
+    }
+
+    /**
      * Build the recommendation system prompt
      */
     private function buildRecommendationPrompt($category, $conditions, $preferences, $supplementsJson): string
@@ -432,6 +557,8 @@ PROMPT;
 
         // Build evidence-based knowledge section
         $evidenceSection = $this->buildEvidenceSection($categoryName, $conditions);
+        $clinicalKnowledge = $this->buildClinicalKnowledge($category->slug ?? null);
+        $interactionWarnings = $this->buildInteractionWarnings($category->slug ?? null);
 
         return <<<PROMPT
 # ΡΟΛΟΣ
@@ -441,12 +568,14 @@ PROMPT;
 # ΑΠΟΣΤΟΛΗ
 
 Ανάλυσε τα διαθέσιμα συμπληρώματα και επέλεξε τα TOP 5 για τον χρήστη.
+ΧΡΗΣΙΜΟΠΟΙΗΣΕ την κλινική γνώση παρακάτω για να ΕΞΗΓΗΣΕΙΣ γιατί κάποια μορφή είναι καλύτερη, γιατί η δόση είναι ανεπαρκής, ή γιατί υπάρχουν red flags. Ο χρήστης πρέπει να ΚΑΤΑΛΑΒΕΙ, όχι απλά να δει βαθμολογίες.
 
 # ΣΤΟΙΧΕΙΑ ΧΡΗΣΤΗ
 
 - **Κατηγορία:** {$categoryName}
 - **Καταστάσεις/Στόχοι:** {$conditionsList}
 {$constraintsText}
+{$clinicalKnowledge}
 {$evidenceSection}
 # ΣΥΣΤΗΜΑ ΒΑΘΜΟΛΟΓΗΣΗΣ (0-10) — Καθαρά κλινικό, χωρίς τιμή/κριτικές
 
@@ -491,10 +620,12 @@ PROMPT;
 **Παράδειγμα:**
 "Περιέχει μαγνήσιο bisglycinate με 90% βιοδιαθεσιμότητα - τη μορφή με την καλύτερη απορρόφηση. Ιδανικό για διαβήτη καθώς μελέτες δείχνουν βελτίωση ευαισθησίας ινσουλίνης. Third-party tested για εγγυημένη καθαρότητα."
 
+{$interactionWarnings}
 # ΠΡΟΕΙΔΟΠΟΙΗΣΕΙΣ ΑΣΦΑΛΕΙΑΣ
 
 - Αν κάποιο συμπλήρωμα έχει αντενδείξεις για τις καταστάσεις του χρήστη, ΜΗΝ το προτείνεις
 - Πάντα να αναφέρεις: "Συμβουλευτείτε τον γιατρό σας πριν ξεκινήσετε"
+- Αν ο χρήστης αναφέρει φάρμακα ή άλλα συμπληρώματα, ΕΛΕΓΞΕ για αλληλεπιδράσεις στη λίστα παραπάνω
 
 # ΔΙΑΘΕΣΙΜΑ ΣΥΜΠΛΗΡΩΜΑΤΑ
 
@@ -719,14 +850,19 @@ PROMPT;
                             'rank' => $rec['rank'],
                             'brand' => $supplement->brand,
                             'title' => $supplement->title,
-                            'price' => $supplement->current_price,
-                            'rating' => $supplement->rating,
-                            'review_count' => $supplement->review_count,
                             'score' => $supplement->overall_recommendation_score,
+                            'clinical_dose_score' => $supplement->clinical_dose_score,
                             'efficacy_score' => $supplement->efficacy_score,
                             'quality_score' => $supplement->quality_score,
                             'bioavailability_score' => $supplement->bioavailability_score,
                             'formulation_score' => $supplement->formulation_score,
+                            'brand_trust_score' => $supplement->brand_trust_score,
+                            'category_rank' => $supplement->category_rank,
+                            'red_flags' => $supplement->red_flags_detected ?? [],
+                            'dosage_form' => $supplement->dosage_form,
+                            'active_ingredients' => $supplement->active_ingredients,
+                            'certification_flags' => $supplement->certification_flags,
+                            'servings_per_container' => $supplement->servings_per_container,
                             'image_url' => $supplement->image_url,
                             'product_url' => $supplement->product_url,
                             'why_best' => $rec['why_best'] ?? '',
