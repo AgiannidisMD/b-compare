@@ -760,55 +760,82 @@
 
                 getSmartChips() {
                     if (this.messages.length === 0) return [];
-                    // Get last assistant message
                     const lastMsg = [...this.messages].reverse().find(m => m.role === 'assistant');
                     if (!lastMsg) return [];
                     const text = lastMsg.content.toLowerCase();
 
-                    const chips = [];
+                    // Context rules: keyword patterns -> relevant follow-up chips
+                    const rules = [
+                        // Digestion
+                        { match: ['πέψη', 'πεπτικ', 'έντερ', 'digest', 'στομάχ'], chips: ['Φούσκωμα', 'Δυσκοιλιότητα', 'Βαριά πέψη', 'Μετά από αντιβιοτικά'] },
+                        // Sleep
+                        { match: ['ύπνο', 'sleep', 'αϋπνία', 'μελατονίνη'], chips: ['Δυσκολεύομαι να κοιμηθώ', 'Ξυπνάω τη νύχτα', 'Χωρίς μελατονίνη', 'Θέλω φυσική λύση'] },
+                        // Magnesium
+                        { match: ['μαγνήσι', 'magnesium'], chips: ['Για ύπνο', 'Για κράμπες', 'Για άγχος', 'Ποια μορφή;'] },
+                        // Omega-3
+                        { match: ['ωμέγα', 'omega', 'ιχθυέλαιο', 'epa', 'dha'], chips: ['Για καρδιά', 'Για εγκέφαλο', 'Για φλεγμονές', 'Triglyceride ή Ethyl Ester;'] },
+                        // PCOS / Inositol
+                        { match: ['pcos', 'ινοσιτόλη', 'inositol', 'ορμον', 'ωοθηκ'], chips: ['Myo-inositol', 'Αναλογία 40:1', 'Σκόνη ή κάψουλα;', 'Με φολικό;'] },
+                        // Vitamin D
+                        { match: ['βιταμίνη d', 'vitamin d', 'cholecalciferol'], chips: ['Πόσα IU;', 'D3 ή D2;', 'Μαζί με K2;', 'Έχω έλλειψη'] },
+                        // Vitamin C
+                        { match: ['βιταμίνη c', 'vitamin c', 'ασκορβικ'], chips: ['Λιποσωμική;', 'Πόσα mg;', 'Για ανοσοποιητικό', 'Για δέρμα'] },
+                        // Iron
+                        { match: ['σίδηρο', 'iron', 'αναιμία', 'ferrous'], chips: ['Ποια μορφή;', 'Bisglycinate ή sulfate;', 'Με βιταμίνη C;', 'Έχω αναιμία'] },
+                        // Zinc
+                        { match: ['ψευδάργυρο', 'zinc'], chips: ['Picolinate ή oxide;', 'Για ανοσοποιητικό', 'Πόσα mg;', 'Χρειάζεται χαλκός;'] },
+                        // Collagen
+                        { match: ['κολλαγόνο', 'collagen', 'πεπτίδ'], chips: ['Για δέρμα', 'Για αρθρώσεις', 'Hydrolyzed;', 'Τύπος I ή II;'] },
+                        // Probiotics
+                        { match: ['προβιοτικ', 'probiotic', 'lactobacillus', 'bifidobacterium'], chips: ['Πόσα CFU;', 'Για φούσκωμα', 'Ποια στελέχη;', 'Μετά αντιβιοτικά'] },
+                        // B-Vitamins
+                        { match: ['βιταμίνη b', 'b-complex', 'b12', 'φολικό'], chips: ['Methylated μορφή;', 'Για ενέργεια', 'Για νευρικό σύστημα', 'Folic acid ή folate;'] },
+                        // CoQ10
+                        { match: ['coq10', 'ubiquinol', 'ubiquinone', 'συνένζυμο'], chips: ['Ubiquinol ή ubiquinone;', 'Για καρδιά', 'Παίρνω στατίνες', 'Πόσα mg;'] },
+                        // Berberine
+                        { match: ['βερβερίνη', 'berberine'], chips: ['Για σάκχαρο', 'Για χοληστερίνη', 'Πόσα mg;', 'Αντενδείξεις;'] },
+                        // Mushrooms
+                        { match: ['μανιτάρ', 'lion.*mane', 'reishi', 'cordyceps'], chips: ['Lion\'s Mane για μνήμη', 'Reishi για ύπνο', 'Cordyceps για ενέργεια', 'Fruiting body ή mycelium;'] },
+                        // Creatine
+                        { match: ['κρεατίνη', 'creatine'], chips: ['Monohydrate ή HCL;', 'Πόσα g/μέρα;', 'Χρειάζεται loading;', 'CreaPure;'] },
+                        // Joint
+                        { match: ['άρθρωσ', 'joint', 'γλυκοζαμίνη', 'χονδροϊτίνη'], chips: ['Γλυκοζαμίνη + χονδροϊτίνη', 'MSM', 'UC-II κολλαγόνο', 'Boswellia'] },
+                        // Prenatal
+                        { match: ['εγκυμοσύνη', 'prenatal', 'γονιμότητα', 'έγκυος'], chips: ['Methylfolate ή folic acid;', 'Πόσο DHA;', 'Χρειάζομαι σίδηρο;', 'Χολίνη;'] },
+                        // Comparison / brands
+                        { match: ['σύγκρι', 'compar', 'διαφορ', 'vs'], chips: ['Ποιο είναι καλύτερο;', 'Γιατί αυτό;', 'Εναλλακτικές;', 'Αξίζει η διαφορά;'] },
+                        { match: ['thorne', 'now foods', 'life extension', 'μάρκα', 'brand', 'trust'], chips: ['Ποια μάρκα προτείνετε;', 'Thorne vs NOW', 'Ελληνικές μάρκες', 'Ποια είναι πιο αξιόπιστη;'] },
+                        // Dosage / form questions
+                        { match: ['δόση', 'δοσολογ', 'πόσ', 'dosage'], chips: ['Πρωί ή βράδυ;', 'Με φαγητό ή χωρίς;', 'Μπορώ να τα συνδυάσω;', 'Για πόσο καιρό;'] },
+                        // Allergies / restrictions
+                        { match: ['αλλεργ', 'allerg', 'vegan', 'χορτοφ', 'gluten'], chips: ['Χωρίς γλουτένη', 'Vegan', 'Χωρίς σόγια', 'Χωρίς λακτόζη'] },
+                        // General health goals
+                        { match: ['ενέργεια', 'energy', 'κούραση', 'fatigue'], chips: ['B-complex', 'Σίδηρος', 'CoQ10', 'Μαγνήσιο'] },
+                        { match: ['ανοσοποιητ', 'immun', 'κρυολόγημα'], chips: ['Βιταμίνη C', 'Ψευδάργυρος', 'Βιταμίνη D', 'Προβιοτικά'] },
+                        { match: ['δέρμα', 'μαλλιά', 'νύχια', 'skin', 'hair'], chips: ['Κολλαγόνο', 'Βιοτίνη', 'Βιταμίνη C', 'Ψευδάργυρος'] },
+                        { match: ['άγχος', 'stress', 'ηρεμ'], chips: ['Ashwagandha', 'Μαγνήσιο glycinate', 'L-Theanine', 'Ροδιόλα'] },
+                        { match: ['οστά', 'bone', 'οστεοπόρωση'], chips: ['Ασβέστιο', 'Βιταμίνη D + K2', 'Μαγνήσιο', 'Κολλαγόνο'] },
+                        { match: ['καρδι', 'heart', 'χοληστερ', 'πίεση'], chips: ['Ωμέγα-3', 'CoQ10', 'Μαγνήσιο', 'Βερβερίνη'] },
+                    ];
 
-                    // Digestion context
-                    if (text.includes('πέψη') || text.includes('πεπτικ') || text.includes('έντερ') || text.includes('digest')) {
-                        chips.push('Φούσκωμα', 'Δυσκοιλιότητα', 'Βαριά πέψη', 'Μετά από αντιβιοτικά');
-                    }
-                    // Sleep context
-                    else if (text.includes('ύπνο') || text.includes('sleep') || text.includes('αϋπνία')) {
-                        chips.push('Δυσκολεύομαι να κοιμηθώ', 'Ξυπνάω τη νύχτα', 'Θέλω φυσική λύση', 'Χωρίς μελατονίνη');
-                    }
-                    // Magnesium context
-                    else if (text.includes('μαγνήσι') || text.includes('magnesium')) {
-                        chips.push('Για ύπνο', 'Για μυϊκές κράμπες', 'Για άγχος', 'Ποια μορφή είναι καλύτερη;');
-                    }
-                    // Omega-3 context
-                    else if (text.includes('ωμέγα') || text.includes('omega') || text.includes('ιχθυέλαιο')) {
-                        chips.push('Για την καρδιά', 'Για τον εγκέφαλο', 'Για φλεγμονές', 'Triglyceride vs Ethyl Ester');
-                    }
-                    // PCOS/hormonal context
-                    else if (text.includes('pcos') || text.includes('ινοσιτόλη') || text.includes('inositol') || text.includes('ορμον')) {
-                        chips.push('Myo-inositol', 'Αναλογία 40:1', 'Σε σκόνη ή κάψουλα;', 'Με φολικό οξύ;');
-                    }
-                    // Vitamin D context
-                    else if (text.includes('βιταμίνη d') || text.includes('vitamin d')) {
-                        chips.push('Πόσα IU χρειάζομαι;', 'D3 ή D2;', 'Μαζί με K2;', 'Έχω έλλειψη');
-                    }
-                    // Comparison context
-                    else if (text.includes('σύγκρι') || text.includes('compar') || text.includes('διαφορ')) {
-                        chips.push('Ποιο είναι καλύτερο;', 'Ποια μορφή προτείνετε;', 'Ποια μάρκα εμπιστεύεστε;');
-                    }
-                    // Brand context
-                    else if (text.includes('thorne') || text.includes('now foods') || text.includes('life extension') || text.includes('μάρκα') || text.includes('brand')) {
-                        chips.push('Ποια μάρκα είναι πιο αξιόπιστη;', 'Thorne vs NOW Foods', 'Ελληνικές μάρκες');
-                    }
-                    // Generic follow-ups
-                    else if (text.includes('ερώτηση') || text.includes('βοηθ') || text.includes('χρειάζ')) {
-                        chips.push('Για ενέργεια', 'Για ανοσοποιητικό', 'Για αρθρώσεις', 'Για δέρμα και μαλλιά');
-                    }
-                    // Category selection context
-                    else if (text.includes('κατηγορ') || text.includes('ενδιαφέρ') || text.includes('επιλέξ')) {
-                        chips.push('Μαγνήσιο', 'Προβιοτικά', 'Ωμέγα-3', 'Βιταμίνη D', 'Κολλαγόνο');
+                    // Check all rules, collect matching chips
+                    let chips = [];
+                    for (const rule of rules) {
+                        if (rule.match.some(kw => text.includes(kw))) {
+                            chips.push(...rule.chips);
+                            break; // first match wins
+                        }
                     }
 
-                    // Always add a generic option if no context matched
+                    // If AI asked a question, add contextual answers
+                    if (text.includes(';') || text.includes('?')) {
+                        // AI asked something — if no chips matched, add universal follow-ups
+                        if (chips.length === 0) {
+                            chips.push('Ναι', 'Όχι', 'Δεν είμαι σίγουρος/η', 'Πες μου περισσότερα');
+                        }
+                    }
+
+                    // Absolute fallback
                     if (chips.length === 0) {
                         chips.push('Δείξε μου τα top 3', 'Ποια μορφή είναι καλύτερη;', 'Έχω αλλεργία', 'Παίρνω ήδη φάρμακα');
                     }
