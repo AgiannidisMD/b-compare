@@ -91,21 +91,8 @@ class ChatController extends Controller
         $history = $conversation->conversation_history ?? [];
         $history[] = ['role' => 'user', 'content' => $request->message];
 
-        // Build system prompt (simplified for streaming - extraction only)
-        $categories = SupplementCategory::pluck('name')->implode(', ');
-        $conditions = MedicalCondition::pluck('name')->implode(', ');
-
-        $systemPrompt = <<<PROMPT
-Είσαι ο SupplementIQ, σύμβουλος συμπληρωμάτων. Μιλάς Ελληνικά.
-
-Κατηγορίες: {$categories}
-Καταστάσεις: {$conditions}
-
-Κάνε ΜΙΑ ερώτηση τη φορά. Να είσαι συνοπτικός (2-3 προτάσεις).
-Βοήθησε τον χρήστη να επιλέξει κατηγορία και να αναφέρει την κατάστασή του.
-
-ΜΗΝ απαντάς σε JSON. Απάντησε φυσικά στα Ελληνικά.
-PROMPT;
+        // Build full clinical system prompt for streaming
+        $systemPrompt = $this->chatbot->buildStreamingPrompt($conversation, $request->message);
 
         return response()->stream(function () use ($systemPrompt, $history, $conversation) {
             // Disable output buffering

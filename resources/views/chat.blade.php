@@ -302,14 +302,10 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-4">
-                        <a href="/dashboard" class="text-sm font-medium hover:opacity-70 transition-opacity" style="color: var(--warm-gray);">
-                            Πίνακας
+                    <div class="flex items-center gap-3">
+                        <a href="/" class="text-sm font-medium hover:opacity-70 transition-opacity px-3 py-1.5 rounded-full" style="color: var(--warm-gray); border: 1px solid var(--border);">
+                            Περιήγηση
                         </a>
-                        <div class="hidden sm:block text-right">
-                            <span class="text-sm font-semibold" style="color: var(--charcoal);">23,853</span>
-                            <span class="text-sm" style="color: var(--warm-gray);"> προϊόντα</span>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -317,49 +313,66 @@
 
         <!-- Main Content -->
         <main class="flex-1">
-            <!-- Category Selection -->
+            <!-- No Category Selected: Direct chat -->
             <template x-if="!selectedCategory">
-                <div class="animate-fade-in">
-                    <!-- Hero Section -->
-                    <div class="max-w-4xl mx-auto px-5 sm:px-8 pt-12 sm:pt-20 pb-10 text-center">
-                        <h2 class="text-3xl sm:text-5xl font-semibold tracking-tight mb-4" style="color: var(--charcoal); letter-spacing: -0.02em;">
-                            Βρείτε το Ιδανικό<br>Συμπλήρωμα
-                        </h2>
-                        <p class="text-base sm:text-lg max-w-xl mx-auto" style="color: var(--warm-gray);">
-                            Εξατομικευμένες συστάσεις με τεχνητή νοημοσύνη για τις ανάγκες υγείας σας. Επιλέξτε κατηγορία για να ξεκινήσετε.
-                        </p>
-                    </div>
+                <div class="flex flex-col h-[calc(100vh-73px)] animate-fade-in">
+                    <div class="flex-1 overflow-y-auto px-5 sm:px-8 py-6">
+                        <div class="max-w-3xl mx-auto">
+                            <!-- Welcome message -->
+                            <div class="text-center py-12 sm:py-20">
+                                <h2 class="text-2xl sm:text-3xl font-semibold mb-3" style="color: var(--charcoal); letter-spacing: -0.02em;">
+                                    Πώς μπορώ να σας βοηθήσω;
+                                </h2>
+                                <p class="text-sm sm:text-base mb-8" style="color: var(--warm-gray);">
+                                    Ρωτήστε με για οποιοδήποτε συμπλήρωμα ή περιγράψτε τι χρειάζεστε
+                                </p>
+                                <div class="flex flex-wrap justify-center gap-2">
+                                    <button @click="userInput = 'Θέλω μαγνήσιο για ύπνο'; sendMessage()" class="px-4 py-2 rounded-full text-sm transition-all" style="background: var(--card-bg); border: 1px solid var(--border); color: var(--charcoal);">Μαγνήσιο για ύπνο</button>
+                                    <button @click="userInput = 'Τι ωμέγα-3 προτείνετε;'; sendMessage()" class="px-4 py-2 rounded-full text-sm transition-all" style="background: var(--card-bg); border: 1px solid var(--border); color: var(--charcoal);">Ωμέγα-3</button>
+                                    <button @click="userInput = 'Έχω PCOS, τι να πάρω;'; sendMessage()" class="px-4 py-2 rounded-full text-sm transition-all" style="background: var(--card-bg); border: 1px solid var(--border); color: var(--charcoal);">PCOS</button>
+                                    <button @click="userInput = 'Θέλω βιταμίνη D'; sendMessage()" class="px-4 py-2 rounded-full text-sm transition-all" style="background: var(--card-bg); border: 1px solid var(--border); color: var(--charcoal);">Βιταμίνη D</button>
+                                    <button @click="userInput = 'Σύγκρινε Thorne vs NOW Foods'; sendMessage()" class="px-4 py-2 rounded-full text-sm transition-all" style="background: var(--card-bg); border: 1px solid var(--border); color: var(--charcoal);">Σύγκριση μαρκών</button>
+                                </div>
+                            </div>
 
-                    <!-- Categories Grid -->
-                    <div class="max-w-6xl mx-auto px-5 sm:px-8 pb-16">
-                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                            <template x-for="cat in categories" :key="cat.id">
-                                <button @click="selectCategory(cat)" class="category-card p-5 sm:p-6 text-left">
-                                    <div class="mb-3" x-html="getCategoryIcon(cat.slug)" style="color: var(--gold);"></div>
-                                    <h3 class="font-semibold text-sm sm:text-base mb-1" style="color: var(--charcoal);" x-text="cat.name"></h3>
-                                    <p class="text-xs" style="color: var(--warm-gray);" x-text="cat.product_count.toLocaleString() + ' προϊόντα'"></p>
-                                </button>
+                            <!-- Messages (appear after first message) -->
+                            <template x-for="(msg, idx) in messages" :key="idx">
+                                <div :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'" class="animate-fade-in mb-4">
+                                    <div :class="msg.role === 'user' ? 'bubble-user' : 'bubble-assistant'"
+                                         class="px-5 py-3 max-w-[85%] sm:max-w-[75%] text-[15px] leading-relaxed"
+                                         x-html="formatMessage(msg.content)"></div>
+                                </div>
+                            </template>
+
+                            <!-- Loading -->
+                            <template x-if="loading">
+                                <div class="flex justify-start">
+                                    <div class="bubble-assistant px-6 py-4 flex items-center gap-2">
+                                        <div class="loading-dot"></div>
+                                        <div class="loading-dot"></div>
+                                        <div class="loading-dot"></div>
+                                    </div>
+                                </div>
                             </template>
                         </div>
                     </div>
 
-                    <!-- Trust Indicators -->
-                    <div class="border-t" style="border-color: var(--border);">
-                        <div class="max-w-4xl mx-auto px-5 sm:px-8 py-12">
-                            <div class="grid grid-cols-3 gap-8 text-center">
-                                <div>
-                                    <div class="text-2xl sm:text-3xl font-semibold mb-1" style="color: var(--gold);">23,853</div>
-                                    <div class="text-xs sm:text-sm" style="color: var(--warm-gray);">Συμπληρώματα</div>
-                                </div>
-                                <div>
-                                    <div class="text-2xl sm:text-3xl font-semibold mb-1" style="color: var(--gold);">18</div>
-                                    <div class="text-xs sm:text-sm" style="color: var(--warm-gray);">Καταστάσεις Υγείας</div>
-                                </div>
-                                <div>
-                                    <div class="text-2xl sm:text-3xl font-semibold mb-1" style="color: var(--gold);">980+</div>
-                                    <div class="text-xs sm:text-sm" style="color: var(--warm-gray);">Αξιόπιστες Μάρκες</div>
-                                </div>
-                            </div>
+                    <!-- Input bar -->
+                    <div class="border-t px-4 sm:px-8 py-4" style="background: var(--card-bg); border-color: var(--border);">
+                        <div class="max-w-3xl mx-auto">
+                            <form @submit.prevent="sendMessage()" class="flex gap-3">
+                                <input x-model="userInput"
+                                       type="text"
+                                       placeholder="Γράψτε την ερώτησή σας..."
+                                       class="flex-1 px-5 py-3 rounded-2xl text-[15px] outline-none transition-all"
+                                       style="background: var(--warm-bg); border: 1px solid var(--border); color: var(--charcoal);"
+                                       :disabled="loading">
+                                <button type="submit"
+                                        :disabled="!userInput.trim() || loading"
+                                        class="btn-premium px-5 py-3 text-sm disabled:opacity-50">
+                                    Αποστολή
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>

@@ -101,6 +101,53 @@ class ChatbotService
         return "\n# ΕΠΙΣΤΗΜΟΝΙΚΗ ΓΝΩΣΗ\n" . implode("\n", $knowledge) . "\n";
     }
 
+    /**
+     * Build a full clinical prompt for the streaming endpoint.
+     * Same intelligence as the extraction prompt but outputs plain text (no JSON).
+     */
+    public function buildStreamingPrompt(ChatConversation $conversation, string $userMessage): string
+    {
+        $categories = SupplementCategory::pluck('name')->implode(', ');
+        $conditions = MedicalCondition::pluck('name')->implode(', ');
+
+        $currentCategory = $conversation->selected_category_id
+            ? SupplementCategory::find($conversation->selected_category_id)?->name
+            : null;
+        $categorySlug = $conversation->selected_category_id
+            ? SupplementCategory::find($conversation->selected_category_id)?->slug
+            : null;
+
+        $clinicalKnowledge = $this->buildClinicalKnowledge($categorySlug);
+        $interactionWarnings = $this->buildInteractionWarnings($categorySlug);
+        $liveProducts = $this->buildLiveProductContext($conversation->selected_category_id, $userMessage);
+        $comparisonContext = $this->buildComparisonContext($userMessage, $conversation->selected_category_id);
+
+        $userProfile = UserProfile::getOrCreateForSession($conversation->session_id, $conversation->user_ip ?? '');
+        $memoryContext = $userProfile->getMemoryContext();
+
+        return <<<PROMPT
+Είσαι κλινικός σύμβουλος συμπληρωμάτων. Μιλάς Ελληνικά. Απαντάς σε ΚΑΘΑΡΟ ΚΕΙΜΕΝΟ χωρίς markdown, χωρίς **, χωρίς bullets.
+
+Κατηγορίες: {$categories}
+Καταστάσεις: {$conditions}
+Επιλεγμένη κατηγορία: {$currentCategory}
+{$memoryContext}
+{$clinicalKnowledge}
+{$interactionWarnings}
+{$liveProducts}
+{$comparisonContext}
+
+ΚΑΝΟΝΕΣ:
+- Χρησιμοποίησε τα ΠΡΑΓΜΑΤΙΚΑ ΔΕΔΟΜΕΝΑ από τη βάση αν υπάρχουν παραπάνω
+- Αναφέρου σε συγκεκριμένα προϊόντα με brand + title + score
+- Εξήγησε μορφές συστατικών (glycinate vs oxide) και δόσεις
+- Προειδοποίησε για αλληλεπιδράσεις αν ο χρήστης αναφέρει φάρμακα/συμπληρώματα
+- 2-4 προτάσεις, φυσική ροή σαν να μιλάς σε ασθενή
+- Κάνε ΜΙΑ ερώτηση τη φορά
+- ΠΟΤΕ markdown, bullets, αστερίσκους
+PROMPT;
+    }
+
     public function processMessage(ChatConversation $conversation, string $userMessage): array
     {
         $history = $conversation->conversation_history ?? [];
@@ -189,6 +236,7 @@ class ChatbotService
         $clinicalKnowledge = $this->buildClinicalKnowledge($categorySlug);
         $interactionWarnings = $this->buildInteractionWarnings($categorySlug);
         $liveProducts = $this->buildLiveProductContext($conversation->selected_category_id, $userMessage);
+        $comparisonContext = $this->buildComparisonContext($userMessage, $conversation->selected_category_id);
 
         // Get user memory context
         $memoryContext = $userProfile ? $userProfile->getMemoryContext() : '';
@@ -213,6 +261,7 @@ class ChatbotService
 {$clinicalKnowledge}
 {$interactionWarnings}
 {$liveProducts}
+{$comparisonContext}
 {$contextualKnowledge}
 
 # ΠΩΣ ΝΑ ΑΠΑΝΤΑΣ
@@ -584,6 +633,76 @@ PROMPT;
         }
 
         return null;
+    }
+
+    /**
+     * Detect if user wants to compare products and build comparison context.
+     */
+    private function buildComparisonContext(string $userMessage, ?int $categoryId): string
+    {
+        $message = strtolower($userMessage);
+
+        // Detect comparison intent
+        $compareKeywords = ['compare', 'σύγκριση', 'σύγκρινε', 'διαφορά', 'διαφορές', 'vs', 'ή', 'καλύτερο', ' or ', 'difference', 'versus'];
+        $wantsCompare = false;
+        foreach ($compareKeywords as $kw) {
+            if (str_contains($message, $kw)) {
+                $wantsCompare = true;
+                break;
+            }
+        }
+
+        if (!$wantsCompare) return '';
+
+        // Try to find 2+ brand/product names in the message
+        $query = Supplement::query();
+        if ($categoryId) {
+            $query->where('category_id', $categoryId);
+        }
+
+        // Get distinct brands in category
+        $brands = $query->select('brand')->distinct()->pluck('brand');
+        $matchedBrands = [];
+        foreach ($brands as $brand) {
+            if (str_contains($message, strtolower($brand))) {
+                $matchedBrands[] = $brand;
+            }
+        }
+
+        if (count($matchedBrands) < 2) return '';
+
+        // Pull top product from each matched brand
+        $sections = ["\n# ΣΥΓΚΡΙΣΗ ΠΡΟΪΟΝΤΩΝ\n"];
+        $sections[] = "Ο χρήστης θέλει σύγκριση. Δώσε ΑΝΑΛΥΤΙΚΗ σύγκριση με βάση τα παρακάτω δεδομένα:\n";
+
+        foreach ($matchedBrands as $brand) {
+            $products = Supplement::where('brand', $brand)
+                ->when($categoryId, fn($q) => $q->where('category_id', $categoryId))
+                ->orderByDesc('overall_recommendation_score')
+                ->limit(2)
+                ->get();
+
+            foreach ($products as $s) {
+                $ingredients = '';
+                if (!empty($s->active_ingredients) && is_array($s->active_ingredients)) {
+                    $ingList = array_map(fn($ing) => ($ing['name'] ?? '') . ' ' . ($ing['amount'] ?? '') . ($ing['unit'] ?? ''), array_slice($s->active_ingredients, 0, 4));
+                    $ingredients = implode(', ', $ingList);
+                }
+                $flags = !empty($s->red_flags_detected) ? 'RED FLAGS: ' . implode(', ', $s->red_flags_detected) : 'Χωρίς red flags';
+                $certs = !empty($s->certification_flags) && is_array($s->certification_flags) ? implode(', ', array_slice($s->certification_flags, 0, 3)) : 'Χωρίς πιστοποιήσεις';
+
+                $sections[] = "## {$s->brand} - {$s->title}";
+                $sections[] = "Score: {$s->overall_recommendation_score}/10 | Rank: #{$s->category_rank} | Dose: {$s->clinical_dose_score} | Bio: {$s->bioavailability_score} | Quality: {$s->quality_score}";
+                $sections[] = "Brand Trust: {$s->brand_trust_score}/10 | Form: {$s->dosage_form} | Servings: {$s->servings_per_container}";
+                $sections[] = "Ingredients: {$ingredients}";
+                $sections[] = "Certifications: {$certs}";
+                $sections[] = "{$flags}\n";
+            }
+        }
+
+        $sections[] = "ΟΔΗΓΙΕΣ: Σύγκρινε τα προϊόντα σε καθαρό κείμενο. Πες ξεκάθαρα ποιο είναι καλύτερο και ΓΙΑΤΙ (μορφή, δόση, απορρόφηση, red flags). Μην χρησιμοποιείς markdown.";
+
+        return implode("\n", $sections) . "\n";
     }
 
     /**
