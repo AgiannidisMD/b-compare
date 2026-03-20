@@ -990,8 +990,9 @@
                             // Read SSE stream
                             const reader = response.body.getReader();
                             const decoder = new TextDecoder();
-                            let assistantMsg = { role: 'assistant', content: '' };
-                            this.messages.push(assistantMsg);
+                            let fullContent = '';
+                            const msgIndex = this.messages.length;
+                            this.messages.push({ role: 'assistant', content: '' });
                             this.loading = false;
 
                             while (true) {
@@ -1004,17 +1005,16 @@
                                         try {
                                             const event = JSON.parse(line.slice(6));
                                             if (event.type === 'chunk') {
-                                                assistantMsg.content += event.content;
+                                                fullContent += event.content;
                                             } else if (event.type === 'done') {
-                                                assistantMsg.content = event.content;
+                                                fullContent = event.content;
                                             }
                                         } catch (e) {}
                                     }
                                 }
-                                this.$nextTick(() => {
-                                    const containers = document.querySelectorAll('.overflow-y-auto');
-                                    containers.forEach(c => c.scrollTop = c.scrollHeight);
-                                });
+                                // Replace the message to trigger Alpine reactivity
+                                this.messages[msgIndex] = { role: 'assistant', content: fullContent };
+                                this.messages = [...this.messages];
                             }
                         }
                     } catch (error) {
