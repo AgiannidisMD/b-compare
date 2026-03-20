@@ -952,71 +952,24 @@
                     });
 
                     try {
-                        if (this.selectedCategory) {
-                            // Category selected: use full extraction pipeline
-                            const response = await fetch('/api/chat/message', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json',
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                },
-                                body: JSON.stringify({
-                                    session_id: this.sessionId,
-                                    message: message
-                                })
-                            });
-                            if (!response.ok) throw new Error('API returned ' + response.status);
-                            const data = await response.json();
-                            this.messages.push({ role: 'assistant', content: data.message || 'Αναλύω τα δεδομένα σας...' });
-                            if (data.recommendations) {
-                                this.recommendations = data.recommendations;
-                            }
-                        } else {
-                            // Free chat: use streaming endpoint for natural conversation
-                            const response = await fetch('/api/chat/stream', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'text/event-stream',
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                },
-                                body: JSON.stringify({
-                                    session_id: this.sessionId,
-                                    message: message
-                                })
-                            });
-                            if (!response.ok) throw new Error('API returned ' + response.status);
-
-                            // Read SSE stream
-                            const reader = response.body.getReader();
-                            const decoder = new TextDecoder();
-                            let fullContent = '';
-                            const msgIndex = this.messages.length;
-                            this.messages.push({ role: 'assistant', content: '' });
-                            this.loading = false;
-
-                            while (true) {
-                                const { done, value } = await reader.read();
-                                if (done) break;
-                                const chunk = decoder.decode(value);
-                                const lines = chunk.split('\n');
-                                for (const line of lines) {
-                                    if (line.startsWith('data: ') && line !== 'data: [DONE]') {
-                                        try {
-                                            const event = JSON.parse(line.slice(6));
-                                            if (event.type === 'chunk') {
-                                                fullContent += event.content;
-                                            } else if (event.type === 'done') {
-                                                fullContent = event.content;
-                                            }
-                                        } catch (e) {}
-                                    }
-                                }
-                                // Replace the message to trigger Alpine reactivity
-                                this.messages[msgIndex] = { role: 'assistant', content: fullContent };
-                                this.messages = [...this.messages];
-                            }
+                        // Always use the message endpoint (reliable, saves history)
+                        const response = await fetch('/api/chat/message', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({
+                                session_id: this.sessionId,
+                                message: message
+                            })
+                        });
+                        if (!response.ok) throw new Error('API returned ' + response.status);
+                        const data = await response.json();
+                        this.messages.push({ role: 'assistant', content: data.message || 'Αναλύω τα δεδομένα σας...' });
+                        if (data.recommendations) {
+                            this.recommendations = data.recommendations;
                         }
                     } catch (error) {
                         console.error('Error:', error);

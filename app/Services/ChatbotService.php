@@ -395,12 +395,35 @@ PROMPT;
                 ];
             }
 
-            Log::warning('AI extraction returned invalid JSON', ['content' => $text]);
+            // JSON parsing failed — try to extract response text anyway
+            // The AI might have returned plain text or malformed JSON
+            Log::warning('AI extraction returned invalid JSON, using raw text', ['content' => mb_substr($text, 0, 200)]);
+
+            // Try to extract "response" field from malformed JSON
+            $responseText = $text;
+            if (preg_match('/"response"\s*:\s*"(.*?)(?:"|$)/s', $text, $matches)) {
+                $responseText = $matches[1];
+            }
+            // Strip any remaining JSON artifacts
+            $responseText = preg_replace('/[{}"\[\]]/', '', $responseText);
+            $responseText = preg_replace('/^\s*(response|category|conditions|budget|allergies|dietary_preferences|confidence|is_ready)\s*:?\s*/mi', '', $responseText);
+            $responseText = trim($responseText);
+
+            if (mb_strlen($responseText) > 10) {
+                return [
+                    'response' => $responseText,
+                    'category_id' => $conversation->selected_category_id,
+                    'conditions' => $conversation->extracted_conditions ?? [],
+                    'preferences' => $conversation->extracted_preferences ?? [],
+                    'confidence' => 0.3,
+                    'is_ready' => false
+                ];
+            }
         } else {
             Log::error('AI extraction failed', ['error' => $result['error'] ?? 'Unknown']);
         }
 
-        // Fallback response
+        // Absolute fallback
         return [
             'response' => $this->getFallbackResponse($conversation),
             'category_id' => $conversation->selected_category_id,
