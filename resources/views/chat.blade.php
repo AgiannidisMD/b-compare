@@ -760,23 +760,24 @@
 
                 getSmartChips() {
                     if (this.messages.length === 0) return [];
-                    // Find last REAL assistant message (skip errors)
-                    const lastMsg = [...this.messages].reverse().find(m =>
+                    // Combine last assistant message + last user message for context
+                    const lastAssistant = [...this.messages].reverse().find(m =>
                         m.role === 'assistant' &&
                         m.content &&
                         !m.content.includes('Αποτυχία σύνδεσης') &&
                         !m.content.includes('Παρουσιάστηκε σφάλμα') &&
                         m.content.length > 20
                     );
-                    if (!lastMsg) return [];
-                    const text = lastMsg.content.toLowerCase();
+                    const lastUser = [...this.messages].reverse().find(m => m.role === 'user');
+                    if (!lastAssistant) return [];
+                    const text = (lastAssistant.content + ' ' + (lastUser?.content || '')).toLowerCase();
 
                     // Context rules: keyword patterns -> relevant follow-up chips
                     const rules = [
                         // Digestion
                         { match: ['πέψη', 'πεπτικ', 'έντερ', 'digest', 'στομάχ'], chips: ['Φούσκωμα', 'Δυσκοιλιότητα', 'Βαριά πέψη', 'Μετά από αντιβιοτικά'] },
                         // Sleep
-                        { match: ['ύπνο', 'sleep', 'αϋπνία', 'μελατονίνη'], chips: ['Δυσκολεύομαι να κοιμηθώ', 'Ξυπνάω τη νύχτα', 'Χωρίς μελατονίνη', 'Θέλω φυσική λύση'] },
+                        { match: ['ύπνο', 'sleep', 'αϋπνία', 'μελατονίνη', 'κοιμ', 'ξυπν'], chips: ['Magnesium glycinate', 'L-Theanine', 'Ashwagandha', 'Δείξε μου τα top 3'] },
                         // Magnesium
                         { match: ['μαγνήσι', 'magnesium'], chips: ['Για ύπνο', 'Για κράμπες', 'Για άγχος', 'Ποια μορφή;'] },
                         // Omega-3
