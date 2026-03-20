@@ -933,38 +933,88 @@
                     this.messages.push({ role: 'user', content: message });
                     this.loading = true;
 
+                    // Scroll to bottom
+                    this.$nextTick(() => {
+                        const containers = document.querySelectorAll('.overflow-y-auto');
+                        containers.forEach(c => c.scrollTop = c.scrollHeight);
+                    });
+
                     try {
-                        const response = await fetch('/api/chat/message', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            body: JSON.stringify({
-                                session_id: this.sessionId,
-                                message: message
-                            })
-                        });
-                        if (!response.ok) {
-                            const text = await response.text();
-                            console.error('API Error:', response.status, text.substring(0, 500));
-                            throw new Error('API returned ' + response.status);
+                        if (this.selectedCategory) {
+                            // Category selected: use full extraction pipeline
+                            const response = await fetch('/api/chat/message', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                },
+                                body: JSON.stringify({
+                                    session_id: this.sessionId,
+                                    message: message
+                                })
+                            });
+                            if (!response.ok) throw new Error('API returned ' + response.status);
+                            const data = await response.json();
+                            this.messages.push({ role: 'assistant', content: data.message || 'Αναλύω τα δεδομένα σας...' });
+                            if (data.recommendations) {
+                                this.recommendations = data.recommendations;
+                            }
+                        } else {
+                            // Free chat: use streaming endpoint for natural conversation
+                            const response = await fetch('/api/chat/stream', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'text/event-stream',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                },
+                                body: JSON.stringify({
+                                    session_id: this.sessionId,
+                                    message: message
+                                })
+                            });
+                            if (!response.ok) throw new Error('API returned ' + response.status);
+
+                            // Read SSE stream
+                            const reader = response.body.getReader();
+                            const decoder = new TextDecoder();
+                            let assistantMsg = { role: 'assistant', content: '' };
+                            this.messages.push(assistantMsg);
+                            this.loading = false;
+
+                            while (true) {
+                                const { done, value } = await reader.read();
+                                if (done) break;
+                                const chunk = decoder.decode(value);
+                                const lines = chunk.split('\n');
+                                for (const line of lines) {
+                                    if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+                                        try {
+                                            const event = JSON.parse(line.slice(6));
+                                            if (event.type === 'chunk') {
+                                                assistantMsg.content += event.content;
+                                            } else if (event.type === 'done') {
+                                                assistantMsg.content = event.content;
+                                            }
+                                        } catch (e) {}
+                                    }
+                                }
+                                this.$nextTick(() => {
+                                    const containers = document.querySelectorAll('.overflow-y-auto');
+                                    containers.forEach(c => c.scrollTop = c.scrollHeight);
+                                });
+                            }
                         }
-                        const data = await response.json();
-                        this.messages.push({ role: 'assistant', content: data.message || 'Αναλύω τα δεδομένα σας...' });
-                        if (data.recommendations) {
-                            this.recommendations = data.recommendations;
-                        }
-                        setTimeout(() => {
-                            const chatBox = document.getElementById('chat-box');
-                            if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
-                        }, 100);
                     } catch (error) {
-                        console.error('Σφάλμα:', error);
+                        console.error('Error:', error);
                         this.messages.push({ role: 'assistant', content: 'Αποτυχία σύνδεσης. Παρακαλώ δοκιμάστε ξανά.' });
                     } finally {
                         this.loading = false;
+                        this.$nextTick(() => {
+                            const containers = document.querySelectorAll('.overflow-y-auto');
+                            containers.forEach(c => c.scrollTop = c.scrollHeight);
+                        });
                     }
                 }
             };
