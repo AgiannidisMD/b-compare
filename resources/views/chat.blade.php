@@ -760,7 +760,14 @@
 
                 getSmartChips() {
                     if (this.messages.length === 0) return [];
-                    const lastMsg = [...this.messages].reverse().find(m => m.role === 'assistant');
+                    // Find last REAL assistant message (skip errors)
+                    const lastMsg = [...this.messages].reverse().find(m =>
+                        m.role === 'assistant' &&
+                        m.content &&
+                        !m.content.includes('Αποτυχία σύνδεσης') &&
+                        !m.content.includes('Παρουσιάστηκε σφάλμα') &&
+                        m.content.length > 20
+                    );
                     if (!lastMsg) return [];
                     const text = lastMsg.content.toLowerCase();
 
@@ -840,7 +847,11 @@
                         chips.push('Δείξε μου τα top 3', 'Ποια μορφή είναι καλύτερη;', 'Έχω αλλεργία', 'Παίρνω ήδη φάρμακα');
                     }
 
-                    return chips.slice(0, 4);
+                    // Filter out chips the user already said
+                    const userMessages = this.messages.filter(m => m.role === 'user').map(m => m.content.toLowerCase());
+                    const filtered = chips.filter(chip => !userMessages.some(um => um === chip.toLowerCase()));
+
+                    return (filtered.length > 0 ? filtered : chips).slice(0, 4);
                 },
 
                 init() {
