@@ -354,6 +354,21 @@
                                     </div>
                                 </div>
                             </template>
+
+                            <!-- Smart Follow-up Chips -->
+                            <template x-if="!loading && messages.length > 0 && getSmartChips().length > 0">
+                                <div class="pt-3 animate-fade-in">
+                                    <div class="flex flex-wrap gap-2">
+                                        <template x-for="(chip, idx) in getSmartChips()" :key="idx">
+                                            <button @click="userInput = chip; sendMessage()"
+                                                    class="px-3 py-1.5 rounded-full text-xs transition-all"
+                                                    style="background: var(--card-bg); border: 1px solid var(--border); color: var(--charcoal);"
+                                                    x-text="chip">
+                                            </button>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
 
@@ -741,6 +756,65 @@
                 preselectedSupplement: @json($preselectedSupplement ?? null),
                 preselectedGoal: @json($preselectedGoal ?? null),
                 preselectedBrand: @json($preselectedBrand ?? null),
+                lastAssistantMessage: '',
+
+                getSmartChips() {
+                    if (this.messages.length === 0) return [];
+                    // Get last assistant message
+                    const lastMsg = [...this.messages].reverse().find(m => m.role === 'assistant');
+                    if (!lastMsg) return [];
+                    const text = lastMsg.content.toLowerCase();
+
+                    const chips = [];
+
+                    // Digestion context
+                    if (text.includes('πέψη') || text.includes('πεπτικ') || text.includes('έντερ') || text.includes('digest')) {
+                        chips.push('Φούσκωμα', 'Δυσκοιλιότητα', 'Βαριά πέψη', 'Μετά από αντιβιοτικά');
+                    }
+                    // Sleep context
+                    else if (text.includes('ύπνο') || text.includes('sleep') || text.includes('αϋπνία')) {
+                        chips.push('Δυσκολεύομαι να κοιμηθώ', 'Ξυπνάω τη νύχτα', 'Θέλω φυσική λύση', 'Χωρίς μελατονίνη');
+                    }
+                    // Magnesium context
+                    else if (text.includes('μαγνήσι') || text.includes('magnesium')) {
+                        chips.push('Για ύπνο', 'Για μυϊκές κράμπες', 'Για άγχος', 'Ποια μορφή είναι καλύτερη;');
+                    }
+                    // Omega-3 context
+                    else if (text.includes('ωμέγα') || text.includes('omega') || text.includes('ιχθυέλαιο')) {
+                        chips.push('Για την καρδιά', 'Για τον εγκέφαλο', 'Για φλεγμονές', 'Triglyceride vs Ethyl Ester');
+                    }
+                    // PCOS/hormonal context
+                    else if (text.includes('pcos') || text.includes('ινοσιτόλη') || text.includes('inositol') || text.includes('ορμον')) {
+                        chips.push('Myo-inositol', 'Αναλογία 40:1', 'Σε σκόνη ή κάψουλα;', 'Με φολικό οξύ;');
+                    }
+                    // Vitamin D context
+                    else if (text.includes('βιταμίνη d') || text.includes('vitamin d')) {
+                        chips.push('Πόσα IU χρειάζομαι;', 'D3 ή D2;', 'Μαζί με K2;', 'Έχω έλλειψη');
+                    }
+                    // Comparison context
+                    else if (text.includes('σύγκρι') || text.includes('compar') || text.includes('διαφορ')) {
+                        chips.push('Ποιο είναι καλύτερο;', 'Ποια μορφή προτείνετε;', 'Ποια μάρκα εμπιστεύεστε;');
+                    }
+                    // Brand context
+                    else if (text.includes('thorne') || text.includes('now foods') || text.includes('life extension') || text.includes('μάρκα') || text.includes('brand')) {
+                        chips.push('Ποια μάρκα είναι πιο αξιόπιστη;', 'Thorne vs NOW Foods', 'Ελληνικές μάρκες');
+                    }
+                    // Generic follow-ups
+                    else if (text.includes('ερώτηση') || text.includes('βοηθ') || text.includes('χρειάζ')) {
+                        chips.push('Για ενέργεια', 'Για ανοσοποιητικό', 'Για αρθρώσεις', 'Για δέρμα και μαλλιά');
+                    }
+                    // Category selection context
+                    else if (text.includes('κατηγορ') || text.includes('ενδιαφέρ') || text.includes('επιλέξ')) {
+                        chips.push('Μαγνήσιο', 'Προβιοτικά', 'Ωμέγα-3', 'Βιταμίνη D', 'Κολλαγόνο');
+                    }
+
+                    // Always add a generic option if no context matched
+                    if (chips.length === 0) {
+                        chips.push('Δείξε μου τα top 3', 'Ποια μορφή είναι καλύτερη;', 'Έχω αλλεργία', 'Παίρνω ήδη φάρμακα');
+                    }
+
+                    return chips.slice(0, 4);
+                },
 
                 init() {
                     if (this.preselectedCategory) {
